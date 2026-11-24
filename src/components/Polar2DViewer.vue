@@ -1,0 +1,983 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import AppIcon from "./AppIcon.vue";
+import type { PhotometricData } from "../core/types";
+
+const props = withDefaults(
+  defineProps<{
+    data: PhotometricData | null;
+    activePlane?: "all" | "max" | "0" | "90";
+    initialPlotMode?: "polar" | "cartesian";
+  }>(),
+  {
+    activePlane: "all",
+    initialPlotMode: "polar",
+  }
+);
+
+const emit = defineEmits<{
+  (e: "update:activePlane", plane: "all" | "max" | "0" | "90"): void;
+}>();
+
+const currentPlane = ref<"all" | "max" | "0" | "90">(props.activePlane);
+const plotMode = ref<"polar" | "cartesian">(props.initialPlotMode);
+const hoveredPoint = ref<{ angle: number; cd: number; plane: string; x: number; y: number } | null>(null);
+
+// Interactive 2D Zoom & Pan State
+const zoomLevel = ref(1.0);
+const panX = ref(0);
+const panY = ref(0);
+const isPanning = ref(false);
+let startClientX = 0;
+let startClientY = 0;
+let startPanX = 0;
+let startPanY = 0;
+
+function handleWheel(e: WheelEvent) {
+  const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
+  const newZoom = Math.max(0.4, Math.min(5.0, zoomLevel.value * zoomFactor));
+  zoomLevel.value = Number(newZoom.toFixed(2));
+}
+
+function handleMouseDown(e: MouseEvent) {
+  if (e.button !== 0 && e.button !== 1) return;
+  // If clicking inside interactive controls, ignore
+  if ((e.target as HTMLElement).closest(".top-controls-bar, .polar-legend, button")) return;
+  isPanning.value = true;
+  startClientX = e.clientX;
+  startClientY = e.clientY;
+  startPanX = panX.value;
+  startPanY = panY.value;
+
+  window.addEventListener("mousemove", onWindowMouseMove);
+  window.addEventListener("mouseup", onWindowMouseUp);
+}
+
+function onWindowMouseMove(e: MouseEvent) {
+  if (!isPanning.value) return;
+  panX.value = startPanX + (e.clientX - startClientX);
+  panY.value = startPanY + (e.clientY - startClientY);
+}
+
+function onWindowMouseUp() {
+  isPanning.value = false;
+  window.removeEventListener("mousemove", onWindowMouseMove);
+  window.removeEventListener("mouseup", onWindowMouseUp);
+}
+
+function zoomIn() {
+  zoomLevel.value = Math.min(5.0, Number((zoomLevel.value * 1.25).toFixed(2)));
+}
+
+function zoomOut() {
+  zoomLevel.value = Math.max(0.4, Number((zoomLevel.value / 1.25).toFixed(2)));
+}
+
+function resetZoom() {
+  zoomLevel.value = 1.0;
+  panX.value = 0;
+  panY.value = 0;
+}
+
+watch(
+  () => props.activePlane,
+  (val) => {
+    if (val) currentPlane.value = val;
+  }
+);
+
+function setPlane(plane: "all" | "max" | "0" | "90") {
+  currentPlane.value = plane;
+  emit("update:activePlane", plane);
+}
+
+const maxVal = computed(() => {
+  return Math.max(1, props.data?.calculated.maxCandela.intensity ?? 100);
+});
+
+// Polar plot dimensions
+const cx = 250;
+const cy = 250;
+const rMax = 200;
+
+// Grid rings (25%, 50%, 75%, 100%)
+const rings = computed(() => [
+  { val: Math.round(maxVal.value * 0.25), r: rMax * 0.25 },
+  { val: Math.round(maxVal.value * 0.5), r: rMax * 0.5 },
+  { val: Math.round(maxVal.value * 0.75), r: rMax * 0.75 },
+  { val: Math.round(maxVal.value), r: rMax },
+]);
+
+// Angle radial lines (0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180 deg)
+const angleLines = computed(() => {
+  const angles = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
+  return angles.map((deg) => {
+    // Nadir (0 deg) is straight down (angle = PI/2 in standard trig)
+    const rad = (deg * Math.PI) / 180 + Math.PI / 2;
+    return {
+      deg,
+      x: cx + rMax * Math.cos(rad),
+      y: cy + rMax * Math.sin(rad),
+      labelX: cx + (rMax + 16) * Math.cos(rad),
+      labelY: cy + (rMax + 16) * Math.sin(rad),
+    };
+  });
+});
+
+// Convert (vertical_angle, candela) to (x, y) coordinates for Polar
+function polarToCartesian(vDeg: number, cd: number, sign: 1 | -1 = 1) {
+  const radius = (cd / maxVal.value) * rMax;
+  // sign: 1 for right hemisphere (0 to 180), -1 for left hemisphere
+  const rad = ((vDeg * sign) * Math.PI) / 180 + Math.PI / 2;
+  return {
+    x: cx + radius * Math.cos(rad),
+    y: cy + radius * Math.sin(rad),
+  };
+}
+
+// Cartesian X-Y Plot Geometry
+const cartWidth = 640;
+const cartHeight = 400;
+const padL = 70;
+const padR = 30;
+const padT = 30;
+const padB = 50;
+const plotW = cartWidth - padL - padR;
+const plotH = cartHeight - padT - padB;
+
+const maxVAngle = computed(() => {
+  if (!props.data) return 180;
+  const v = props.data.verticalAngles;
+  return v[v.length - 1] > 90 ? 180 : 90;
+});
+
+const cartYTicks = computed(() => {
+  return [
+    { val: 0, y: padT + plotH },
+    { val: Math.round(maxVal.value * 0.25), y: padT + plotH * 0.75 },
+    { val: Math.round(maxVal.value * 0.5), y: padT + plotH * 0.5 },
+    { val: Math.round(maxVal.value * 0.75), y: padT + plotH * 0.25 },
+    { val: Math.round(maxVal.value), y: padT },
+  ];
+});
+
+const cartXTicks = computed(() => {
+  const step = maxVAngle.value === 180 ? 30 : 15;
+  const ticks = [];
+  for (let a = 0; a <= maxVAngle.value; a += step) {
+    const x = padL + (a / maxVAngle.value) * plotW;
+    ticks.push({ angle: a, x });
+  }
+  return ticks;
+});
+
+// Generate paths for both Polar and Cartesian
+const allCurves = computed(() => {
+  if (!props.data) return [];
+  const vAngles = props.data.verticalAngles;
+  const hAngles = props.data.horizontalAngles;
+  const candela = props.data.candela;
+  const mult = props.data.multiplier;
+
+  const result = [];
+
+  const findHIdx = (deg: number) => {
+    const idx = hAngles.indexOf(deg);
+    if (idx !== -1) return idx;
+    if (hAngles.length === 1) return 0;
+    let closestIdx = 0;
+    let minDiff = 360;
+    for (let i = 0; i < hAngles.length; i++) {
+      const diff = Math.abs(hAngles[i] - deg);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = i;
+      }
+    }
+    return closestIdx;
+  };
+
+  // 1. Max Candela Plane
+  const maxH = props.data.calculated.maxCandela.horizontalAngle;
+  const maxHIdx = findHIdx(maxH);
+  const oppMaxH = (maxH + 180) % 360;
+  const hasOppMax = hAngles.includes(oppMaxH);
+  const oppMaxIdx = hasOppMax ? hAngles.indexOf(oppMaxH) : maxHIdx;
+
+  // Polar Path
+  let polarMax = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const pt = polarToCartesian(vAngles[i], (candela[maxHIdx]?.[i] ?? 0) * mult, 1);
+    polarMax += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  for (let i = vAngles.length - 1; i >= 0; i--) {
+    const cd = hasOppMax ? (candela[oppMaxIdx]?.[i] ?? 0) : (candela[maxHIdx]?.[i] ?? 0);
+    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
+    polarMax += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  polarMax += "Z";
+
+  // Cartesian Path
+  let cartMax = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const cd = (candela[maxHIdx]?.[i] ?? 0) * mult;
+    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
+    const y = padT + (1 - cd / maxVal.value) * plotH;
+    cartMax += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
+  }
+
+  result.push({
+    id: "max",
+    name: `Max Plane (${maxH}°)`,
+    polarPath: polarMax,
+    cartPath: cartMax,
+    color: "var(--graph-curve-max, #fbbf24)",
+    dash: "",
+    peakCd: Math.round(props.data.calculated.maxCandela.intensity),
+    hIndex: maxHIdx,
+  });
+
+  // 2. 0° Plane (Transverse)
+  const idx0 = findHIdx(0);
+  const hasOpp0 = hAngles.includes(180);
+  const idx180 = hasOpp0 ? hAngles.indexOf(180) : idx0;
+
+  let polar0 = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const pt = polarToCartesian(vAngles[i], (candela[idx0]?.[i] ?? 0) * mult, 1);
+    polar0 += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  for (let i = vAngles.length - 1; i >= 0; i--) {
+    const cd = hasOpp0 ? (candela[idx180]?.[i] ?? 0) : (candela[idx0]?.[i] ?? 0);
+    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
+    polar0 += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  polar0 += "Z";
+
+  let cart0 = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const cd = (candela[idx0]?.[i] ?? 0) * mult;
+    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
+    const y = padT + (1 - cd / maxVal.value) * plotH;
+    cart0 += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
+  }
+
+  const peak0 = Math.round(Math.max(...(candela[idx0] || [0])) * mult);
+  result.push({
+    id: "0",
+    name: "0° - 180° Plane (Transverse)",
+    polarPath: polar0,
+    cartPath: cart0,
+    color: "var(--graph-curve-0, #38bdf8)",
+    dash: "5,3",
+    peakCd: peak0,
+    hIndex: idx0,
+  });
+
+  // 3. 90° Plane (Longitudinal)
+  const idx90 = findHIdx(90);
+  const hasOpp90 = hAngles.includes(270);
+  const idx270 = hasOpp90 ? hAngles.indexOf(270) : idx90;
+
+  let polar90 = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const pt = polarToCartesian(vAngles[i], (candela[idx90]?.[i] ?? 0) * mult, 1);
+    polar90 += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  for (let i = vAngles.length - 1; i >= 0; i--) {
+    const cd = hasOpp90 ? (candela[idx270]?.[i] ?? 0) : (candela[idx90]?.[i] ?? 0);
+    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
+    polar90 += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
+  }
+  polar90 += "Z";
+
+  let cart90 = "";
+  for (let i = 0; i < vAngles.length; i++) {
+    const cd = (candela[idx90]?.[i] ?? 0) * mult;
+    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
+    const y = padT + (1 - cd / maxVal.value) * plotH;
+    cart90 += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
+  }
+
+  const peak90 = Math.round(Math.max(...(candela[idx90] || [0])) * mult);
+  result.push({
+    id: "90",
+    name: "90° - 270° Plane (Longitudinal)",
+    polarPath: polar90,
+    cartPath: cart90,
+    color: "var(--graph-curve-90, #f472b6)",
+    dash: "2,2",
+    peakCd: peak90,
+    hIndex: idx90,
+  });
+
+  return result;
+});
+
+const visibleCurves = computed(() => {
+  if (currentPlane.value === "all") return allCurves.value;
+  return allCurves.value.filter((c) => c.id === currentPlane.value);
+});
+
+function handleCartesianMouseMove(e: MouseEvent) {
+  if (!props.data || plotMode.value !== "cartesian" || isPanning.value) return;
+  const svgEl = e.currentTarget as SVGSVGElement;
+  const rect = svgEl.getBoundingClientRect();
+  const fracTotalX = (e.clientX - rect.left) / rect.width;
+  const fracTotalY = (e.clientY - rect.top) / rect.height;
+  const mouseX = fracTotalX * cartWidth;
+  const mouseY = fracTotalY * cartHeight;
+
+  if (mouseX < padL || mouseX > padL + plotW || mouseY < padT || mouseY > padT + plotH) {
+    hoveredPoint.value = null;
+    return;
+  }
+
+  // Fraction of X axis
+  const fracX = (mouseX - padL) / plotW;
+  const angle = Math.round(fracX * maxVAngle.value);
+
+  // Find nearest vertical angle in data
+  const vAngles = props.data.verticalAngles;
+  let nearestIdx = 0;
+  let minDiff = 360;
+  for (let i = 0; i < vAngles.length; i++) {
+    const diff = Math.abs(vAngles[i] - angle);
+    if (diff < minDiff) {
+      minDiff = diff;
+      nearestIdx = i;
+    }
+  }
+
+  const activeCurve = visibleCurves.value[0] || allCurves.value[0];
+  const cd = Math.round((props.data.candela[activeCurve.hIndex]?.[nearestIdx] ?? 0) * props.data.multiplier);
+  const px = padL + (vAngles[nearestIdx] / maxVAngle.value) * plotW;
+  const py = padT + (1 - cd / maxVal.value) * plotH;
+
+  hoveredPoint.value = {
+    angle: vAngles[nearestIdx],
+    cd,
+    plane: activeCurve.name,
+    x: px,
+    y: py,
+  };
+}
+
+function handleCartesianMouseLeave() {
+  hoveredPoint.value = null;
+}
+</script>
+
+<template>
+  <div class="polar-viewer-container">
+    <!-- Top Control Bar: Graph Mode, Plane Switcher & Zoom Controls -->
+    <div class="top-controls-bar">
+      <!-- Plot Mode Toggle: Polar vs Cartesian -->
+      <div class="plot-mode-group">
+        <button
+          class="mode-btn"
+          :class="{ active: plotMode === 'polar' }"
+          title="Polar Candela Curve Distribution"
+          @click="plotMode = 'polar'"
+        >
+          <span>Polar 2D</span>
+        </button>
+        <button
+          class="mode-btn"
+          :class="{ active: plotMode === 'cartesian' }"
+          title="Cartesian X-Y Candela Distribution (Intensity vs. Angle)"
+          @click="plotMode = 'cartesian'"
+        >
+          <span>Cartesian X-Y</span>
+        </button>
+      </div>
+
+      <!-- Plane Filter Bar -->
+      <div class="plane-switcher-bar">
+        <span class="switcher-label">Plane:</span>
+        <button
+          class="plane-pill"
+          :class="{ active: currentPlane === 'all' }"
+          @click="setPlane('all')"
+        >
+          All Planes
+        </button>
+        <button
+          class="plane-pill"
+          :class="{ active: currentPlane === 'max' }"
+          @click="setPlane('max')"
+        >
+          <span class="color-dot" style="background: var(--graph-curve-max, #fbbf24)"></span>
+          Max Plane
+        </button>
+        <button
+          class="plane-pill"
+          :class="{ active: currentPlane === '0' }"
+          @click="setPlane('0')"
+        >
+          <span class="color-dot" style="background: var(--graph-curve-0, #38bdf8)"></span>
+          0° Transverse
+        </button>
+        <button
+          class="plane-pill"
+          :class="{ active: currentPlane === '90' }"
+          @click="setPlane('90')"
+        >
+          <span class="color-dot" style="background: var(--graph-curve-90, #f472b6)"></span>
+          90° Longitudinal
+        </button>
+      </div>
+
+      <!-- Zoom Controls Group -->
+      <div class="zoom-controls-group">
+        <button class="zoom-btn" title="Zoom Out" @click="zoomOut">
+          <AppIcon name="minus" :size="13" />
+        </button>
+        <button class="zoom-btn zoom-level-badge" title="Reset Zoom (100%)" @click="resetZoom">
+          {{ Math.round(zoomLevel * 100) }}%
+        </button>
+        <button class="zoom-btn" title="Zoom In" @click="zoomIn">
+          <AppIcon name="plus" :size="13" />
+        </button>
+        <button class="zoom-btn reset-btn" title="Reset Zoom and Pan (Fit)" @click="resetZoom">
+          <AppIcon name="reset" :size="13" />
+          <span>Fit</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Zoomable & Pannable Graph Canvas Viewport -->
+    <div
+      class="graph-viewport"
+      @wheel.prevent="handleWheel"
+      @mousedown="handleMouseDown"
+      :class="{ grabbing: isPanning }"
+    >
+      <div
+        class="graph-stage"
+        :style="{
+          transform: `translate(${panX}px, ${panY}px) scale(${zoomLevel})`,
+          transformOrigin: 'center center',
+        }"
+      >
+        <!-- 1. POLAR VIEW -->
+        <div v-if="plotMode === 'polar'" class="polar-svg-wrap">
+          <svg width="500" height="500" viewBox="0 0 500 500" class="polar-svg">
+            <!-- Concentric candela rings -->
+            <g class="grid-rings">
+              <circle
+                v-for="ring in rings"
+                :key="ring.r"
+                :cx="cx"
+                :cy="cy"
+                :r="ring.r"
+                fill="none"
+                stroke="var(--graph-grid, #94a3b8)"
+                stroke-width="1"
+              />
+              <text
+                v-for="ring in rings"
+                :key="'label-' + ring.r"
+                :x="cx + 4"
+                :y="cy - ring.r + 12"
+                class="ring-text"
+              >
+                {{ ring.val }} cd
+              </text>
+            </g>
+
+            <!-- Radial angle spokes -->
+            <g class="grid-spokes">
+              <line
+                v-for="line in angleLines"
+                :key="line.deg"
+                :x1="cx"
+                :y1="cy"
+                :x2="line.x"
+                :y2="line.y"
+                stroke="var(--graph-grid-soft, #cbd5e1)"
+                stroke-width="1"
+                stroke-dasharray="2,4"
+              />
+              <text
+                v-for="line in angleLines"
+                :key="'deg-' + line.deg"
+                :x="line.labelX"
+                :y="line.labelY"
+                text-anchor="middle"
+                dominant-baseline="central"
+                class="spoke-text"
+              >
+                {{ line.deg }}°
+              </text>
+            </g>
+
+            <!-- Polar candela curves -->
+            <g class="curves">
+              <path
+                v-for="c in visibleCurves"
+                :key="c.name"
+                :d="c.polarPath"
+                fill="none"
+                :stroke="c.color"
+                stroke-width="2.4"
+                :stroke-dasharray="c.dash"
+              />
+            </g>
+
+            <!-- Center origin dot -->
+            <circle :cx="cx" :cy="cy" r="3.5" fill="var(--accent, #d97706)" />
+          </svg>
+        </div>
+
+        <!-- 2. CARTESIAN X-Y VIEW -->
+        <div v-else class="cartesian-svg-wrap">
+          <svg
+            :width="cartWidth"
+            :height="cartHeight"
+            :viewBox="`0 0 ${cartWidth} ${cartHeight}`"
+            class="cartesian-svg"
+            @mousemove="handleCartesianMouseMove"
+            @mouseleave="handleCartesianMouseLeave"
+          >
+            <!-- Background grid rectangle -->
+            <rect
+              :x="padL"
+              :y="padT"
+              :width="plotW"
+              :height="plotH"
+              fill="var(--graph-bg, #ffffff)"
+              stroke="var(--line, #94a3b8)"
+              stroke-width="1.2"
+            />
+
+            <!-- Y-Axis Grid Lines & Candela Labels -->
+            <g class="grid-y">
+              <g v-for="yt in cartYTicks" :key="yt.val">
+                <line
+                  :x1="padL"
+                  :y1="yt.y"
+                  :x2="padL + plotW"
+                  :y2="yt.y"
+                  stroke="var(--graph-grid-soft, #cbd5e1)"
+                  stroke-width="1"
+                  stroke-dasharray="2,4"
+                />
+                <text
+                  :x="padL - 8"
+                  :y="yt.y + 3"
+                  text-anchor="end"
+                  class="axis-tick-label"
+                >
+                  {{ yt.val }} cd
+                </text>
+              </g>
+            </g>
+
+            <!-- X-Axis Grid Lines & Angle Labels -->
+            <g class="grid-x">
+              <g v-for="xt in cartXTicks" :key="xt.angle">
+                <line
+                  :x1="xt.x"
+                  :y1="padT"
+                  :x2="xt.x"
+                  :y2="padT + plotH"
+                  stroke="var(--graph-grid-soft, #cbd5e1)"
+                  stroke-width="1"
+                  stroke-dasharray="2,4"
+                />
+                <text
+                  :x="xt.x"
+                  :y="padT + plotH + 18"
+                  text-anchor="middle"
+                  class="axis-tick-label"
+                >
+                  {{ xt.angle }}°
+                </text>
+              </g>
+            </g>
+
+            <!-- Axis Titles -->
+            <text
+              :x="padL + plotW / 2"
+              :y="cartHeight - 10"
+              text-anchor="middle"
+              class="axis-title"
+            >
+              Vertical Angle (0° = Nadir, 90° = Horizontal, 180° = Zenith)
+            </text>
+
+            <text
+              :x="16"
+              :y="padT + plotH / 2"
+              text-anchor="middle"
+              :transform="`rotate(-90 16 ${padT + plotH / 2})`"
+              class="axis-title"
+            >
+              Luminous Intensity (Candela)
+            </text>
+
+            <!-- Candela Curves -->
+            <g class="curves">
+              <path
+                v-for="c in visibleCurves"
+                :key="c.name"
+                :d="c.cartPath"
+                fill="none"
+                :stroke="c.color"
+                stroke-width="2.4"
+                :stroke-dasharray="c.dash"
+              />
+            </g>
+
+            <!-- Interactive Crosshair & Tooltip -->
+            <g v-if="hoveredPoint" class="hover-overlay">
+              <line
+                :x1="hoveredPoint.x"
+                :y1="padT"
+                :x2="hoveredPoint.x"
+                :y2="padT + plotH"
+                stroke="var(--accent, #d97706)"
+                stroke-width="1"
+                stroke-dasharray="2,2"
+              />
+              <circle
+                :cx="hoveredPoint.x"
+                :cy="hoveredPoint.y"
+                r="4.5"
+                fill="var(--accent, #d97706)"
+                stroke="var(--panel, #ffffff)"
+                stroke-width="1.5"
+              />
+              <!-- Tooltip Box -->
+              <rect
+                :x="Math.min(padL + plotW - 130, Math.max(padL + 10, hoveredPoint.x - 65))"
+                :y="Math.max(padT + 10, hoveredPoint.y - 45)"
+                width="130"
+                height="36"
+                rx="4"
+                fill="var(--panel, #ffffff)"
+                stroke="var(--line, #cbd5e1)"
+                filter="drop-shadow(0 2px 5px rgba(0,0,0,0.2))"
+              />
+              <text
+                :x="Math.min(padL + plotW - 65, Math.max(padL + 75, hoveredPoint.x))"
+                :y="Math.max(padT + 10, hoveredPoint.y - 45) + 14"
+                text-anchor="middle"
+                class="tooltip-text-primary"
+              >
+                {{ hoveredPoint.angle }}°: {{ hoveredPoint.cd }} cd
+              </text>
+              <text
+                :x="Math.min(padL + plotW - 65, Math.max(padL + 75, hoveredPoint.x))"
+                :y="Math.max(padT + 10, hoveredPoint.y - 45) + 28"
+                text-anchor="middle"
+                class="tooltip-text-secondary"
+              >
+                {{ hoveredPoint.plane }}
+              </text>
+            </g>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Polar / Cartesian Legend & Summary Stats -->
+    <div class="polar-legend">
+      <div
+        v-for="c in allCurves"
+        :key="c.name"
+        class="legend-item"
+        :class="{ inactive: currentPlane !== 'all' && currentPlane !== c.id }"
+        @click="setPlane(c.id as any)"
+      >
+        <span class="legend-color-swatch" :style="{ background: c.color }"></span>
+        <span class="legend-name">{{ c.name }}</span>
+        <span class="legend-val">({{ c.peakCd }} cd)</span>
+      </div>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.polar-viewer-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 16px;
+  background: var(--workspace, #26262d);
+  overflow: auto;
+}
+
+.top-controls-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+  z-index: 10;
+}
+
+.plot-mode-group {
+  display: flex;
+  background: var(--well);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 2px;
+  gap: 2px;
+}
+
+.mode-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-btn:hover {
+  color: var(--text);
+  background: var(--raised);
+}
+
+.mode-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.plane-switcher-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--panel);
+  padding: 3px 8px;
+  border-radius: var(--control-radius);
+  border: 1px solid var(--line);
+}
+
+.switcher-label {
+  font-size: 0.8rem;
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 2px;
+}
+
+.plane-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--well);
+  border: 1px solid var(--line);
+  color: var(--text);
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-weight: 500;
+}
+
+.plane-pill:hover {
+  background: var(--raised);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.plane-pill.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+/* Zoom Controls */
+.zoom-controls-group {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 2px 4px;
+}
+
+.zoom-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--well);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 3px;
+  width: 26px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zoom-btn:hover {
+  background: var(--raised);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.zoom-level-badge {
+  width: auto;
+  min-width: 44px;
+  padding: 0 6px;
+  font-size: 0.75rem;
+  font-family: monospace;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.zoom-btn.reset-btn {
+  width: auto;
+  gap: 4px;
+  padding: 0 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  box-shadow: 0 0 2px rgba(0,0,0,0.3);
+}
+
+/* Zoomable & Pannable Viewport */
+.graph-viewport {
+  flex: 1;
+  width: 100%;
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+
+.graph-viewport.grabbing {
+  cursor: grabbing;
+}
+
+.graph-stage {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.04s ease-out;
+  will-change: transform;
+}
+
+.polar-svg-wrap {
+  width: 500px;
+  height: 500px;
+  flex-shrink: 0;
+}
+
+.polar-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.cartesian-svg-wrap {
+  width: 640px;
+  height: 400px;
+  flex-shrink: 0;
+}
+
+.cartesian-svg {
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.ring-text,
+.axis-tick-label {
+  font-size: 10px;
+  fill: var(--muted);
+  font-family: monospace;
+  font-weight: 500;
+}
+
+.spoke-text {
+  font-size: 10px;
+  fill: var(--text);
+  font-weight: 600;
+}
+
+.axis-title {
+  font-size: 11px;
+  fill: var(--text);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.tooltip-text-primary {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--text);
+  font-family: monospace;
+}
+
+.tooltip-text-secondary {
+  font-size: 9.5px;
+  fill: var(--muted);
+  font-weight: 500;
+}
+
+.polar-legend {
+  display: flex;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 8px 16px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  z-index: 10;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--text);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: opacity 0.15s ease;
+  font-weight: 500;
+}
+
+.legend-item.inactive {
+  opacity: 0.35;
+}
+
+.legend-color-swatch {
+  width: 14px;
+  height: 4px;
+  border-radius: 2px;
+}
+
+.legend-val {
+  font-family: monospace;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+</style>

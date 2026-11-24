@@ -1,0 +1,521 @@
+/* Global resets and workspace container */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: var(--ui-font-family, system-ui, -apple-system, sans-serif);
+  font-size: var(--ui-font-size, 13px);
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* Header & Title bar */
+.window-titlebar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 36px;
+  background: var(--well);
+  border-bottom: 1px solid var(--line);
+  padding: 0 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  user-select: none;
+}
+
+.window-titlebar .app-branding {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+
+.window-titlebar .app-branding svg {
+  color: var(--accent);
+}
+
+.window-titlebar .file-name {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.window-titlebar .titlebar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+}
+
+.window-titlebar .window-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--muted);
+  border-radius: var(--control-radius);
+  width: 28px;
+  height: 28px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--raised);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* Ribbon Tabs */
+.ribbon-tabs {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  padding: 0 12px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-soft);
+  gap: 4px;
+  overflow: hidden;
+  height: 32px;
+}
+
+.ribbon-tabs > button {
+  height: 100%;
+  padding: 0 16px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: color 0.12s ease, border-color 0.12s ease;
+}
+
+.ribbon-tabs > button.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.ribbon-tabs > button:hover:not(.active) {
+  color: var(--text);
+  background: var(--raised);
+}
+
+/* Ribbon Container & Groups */
+.ribbon {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  gap: 0;
+  overflow: hidden;
+  height: calc(64px + 1.8rem);
+  min-height: calc(64px + 1.8rem);
+  padding: 4px 6px;
+}
+
+.ribbon-group {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  min-width: 0;
+  border-right: 1px solid var(--line);
+  padding: 0 6px;
+  gap: 2px;
+  justify-content: space-between;
+}
+
+.ribbon-group:last-child {
+  border-right: 0;
+}
+
+.ribbon-group-title {
+  font-size: 0.7rem;
+  color: var(--hint);
+  text-align: center;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  margin-top: auto;
+  padding-bottom: 2px;
+}
+
+.ribbon-actions {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  align-items: stretch;
+  flex: 1;
+  grid-template-rows: repeat(3, 22px);
+  align-content: start;
+  gap: 2px 4px;
+}
+
+.ribbon-action {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 28px;
+  background: none;
+  border: 0;
+  border-radius: var(--control-radius);
+  text-align: center;
+  grid-row: span 3;
+  padding: 4px 6px;
+  gap: 4px;
+  width: var(--ribbon-button-width, auto);
+  min-width: 56px;
+  max-width: 90px;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.ribbon-action svg {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  color: var(--toolbar-icon);
+}
+
+.ribbon-action:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.ribbon-action:hover:not(:disabled) svg {
+  color: var(--text);
+}
+
+.ribbon-action.pressed,
+.ribbon-action.active {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.ribbon-action.pressed svg,
+.ribbon-action.active svg {
+  color: var(--accent);
+}
+
+.ribbon-label {
+  display: -webkit-box;
+  overflow: hidden;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.8rem;
+  line-height: 1.1;
+  min-height: 2.2em;
+  max-width: var(--ribbon-caption-width, 76px);
+}
+
+/* Small degraded button state */
+.ribbon-action[data-ribbon-mini] {
+  grid-row: span 1;
+  flex-direction: row;
+  min-width: unset;
+  max-width: unset;
+  padding: 2px 6px;
+  gap: 6px;
+}
+
+.ribbon-action[data-ribbon-mini] .ribbon-label {
+  display: none;
+}
+
+/* Main Workspace Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  background: var(--workspace);
+}
+
+.main-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Side Inspector / Metadata Rail */
+.side-inspector {
+  width: 320px;
+  flex-shrink: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.inspector-header {
+  padding: 10px 14px;
+  background: var(--well);
+  border-bottom: 1px solid var(--line-soft);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.inspector-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.data-card {
+  background: var(--raised);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 10px 12px;
+}
+
+.data-card-title {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.data-kv {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.82rem;
+  padding: 3px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+
+.data-kv:last-child {
+  border-bottom: 0;
+}
+
+.data-kv .k {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.data-kv .v {
+  color: var(--text);
+  font-weight: 600;
+}
+
+/* Central Viewport / Canvas */
+.viewport-area {
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--workspace);
+}
+
+.viewport-tabs {
+  display: flex;
+  background: var(--well);
+  border-bottom: 1px solid var(--line);
+  height: 32px;
+  align-items: center;
+  padding: 0 8px;
+  gap: 4px;
+}
+
+.viewport-tab {
+  height: 26px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: var(--control-radius);
+  background: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.viewport-tab.active {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.viewport-tab:hover:not(.active) {
+  background: var(--panel);
+  color: var(--text);
+}
+
+.canvas-container {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Status Bar */
+.status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 24px;
+  background: var(--well);
+  border-top: 1px solid var(--line-soft);
+  padding: 0 12px;
+  font-size: 0.75rem;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+.status-bar .status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.status-badge {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+}
+
+/* Custom Window Controls (matching GEstimator Client-Side Decorations) */
+.window-controls {
+  display: flex;
+  gap: 2px;
+  align-items: center;
+  border-left: 1px solid var(--line);
+  padding-left: 6px;
+  margin-left: 6px;
+}
+
+.window-controls .icon-button {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  border-radius: var(--control-radius);
+  transition: all 0.12s ease;
+}
+
+.window-controls .icon-button:hover:not(:disabled) {
+  background: var(--raised);
+  color: var(--text);
+}
+
+.window-controls .window-close:hover:not(:disabled) {
+  background: #e11d48 !important;
+  color: #ffffff !important;
+}
+
+/* Global Print Styles (Print to PDF / Printer without Application Shell UI) */
+@media print {
+  @page {
+    margin: 10mm;
+    size: auto;
+  }
+
+  /* Completely suppress all outer application chrome */
+  .window-titlebar,
+  .ribbon-tabs,
+  .ribbon,
+  .ribbon-toolbar,
+  .side-inspector,
+  .status-bar,
+  .viewport-tabs,
+  .report-toolbar,
+  .no-print,
+  .modal-backdrop,
+  .modal-overlay,
+  .window-controls,
+  .theme-toggle-btn {
+    display: none !important;
+  }
+
+  /* Force print document to occupy full width on clean white canvas */
+  html,
+  body,
+  #app,
+  .app-container,
+  .main-body,
+  .viewport-area,
+  .canvas-container,
+  .reports-root,
+  .paper-container {
+    background: #ffffff !important;
+    color: #18181b !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    position: static !important;
+  }
+
+  .report-paper {
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 0 !important;
+    page-break-after: avoid;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .report-table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+    font-size: 10px !important;
+  }
+
+  .report-table th,
+  .report-table td {
+    border: 1px solid #cbd5e1 !important;
+    color: #18181b !important;
+  }
+
+  .report-table th {
+    background-color: #f1f5f9 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}

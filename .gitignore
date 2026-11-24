@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build Outputs
+dist/
+dist-ssr/
+
+# Tauri & Rust artifacts
+src-tauri/target/
+src-tauri/gen/
+
+# Decompiled binaries and installer artifacts (DO NOT COMMIT)
+extracted_installer/
+*.exe
+*.dll
+*.msi
+*.cab
+*.chm
+*.tlb
+
+# Editor & OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
