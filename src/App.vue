@@ -2,12 +2,12 @@
 import { computed, onMounted, onBeforeUnmount, nextTick, ref, shallowRef, defineAsyncComponent, watch, h, type AsyncComponentLoader } from "vue";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open, save } from "@tauri-apps/plugin-dialog";
+import { open } from "@tauri-apps/plugin-dialog";
 import AppIcon from "./components/AppIcon.vue";
 import ThemedSelect from "./components/ThemedSelect.vue";
 import { useLuminaireCatalog } from "./composables/useLuminaireCatalog";
 import { parsePhotometric } from "./core/photometricParser";
-import { readPhotometricText } from "./services/photometricFiles";
+import { readPhotometricText, savePhotometricText } from "./services/photometricFiles";
 import { toTypeCData } from "./core/goniometerConversion";
 // Keep shell settings available while optional tool chunks load or fail.
 function lazyTool(loader: AsyncComponentLoader) {
@@ -249,8 +249,7 @@ async function openFile() {
         loadFileContent(content, name);
       }
     } catch (err) {
-      console.warn("Tauri dialog fallback:", err);
-      fileInput.value?.click();
+      statusMessage.value = `Could not open file: ${err instanceof Error ? err.message : String(err)}`;
     }
   } else {
     fileInput.value?.click();
@@ -266,58 +265,19 @@ async function handleFileInput(event: Event) {
   catch (error) { statusMessage.value = `Could not read ${file.name}: ${error instanceof Error ? error.message : error}`; }
 }
 
-// Save file
-async function saveFile() {
+// All photometric exports share native save/cancel/error behavior.
+async function saveDocument(format: "ies" | "ldt") {
   if (!currentData.value) return;
-  const content = serializeIES(currentData.value);
-
-  if (isTauri()) {
-    try {
-      const selected = await save({
-        defaultPath: currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "") + ".ies",
-        filters: [{ name: "IES Luminaire Files", extensions: ["ies"] }],
-      });
-      if (selected) {
-        await invoke("save_photometric_file", { path: selected, content });
-        statusMessage.value = `Saved ${selected.split(/[\\/]/).pop() || currentFileName.value}.`;
-      }
-      return;
-    } catch (err) {
-      console.warn("Tauri save dialog fallback:", err);
-    }
+  try {
+    const content = format === "ies" ? serializeIES(currentData.value) : serializeEULUMDAT(currentData.value);
+    const name = await savePhotometricText(content, currentFileName.value, format);
+    if (name) statusMessage.value = isTauri() ? `Saved ${name}.` : `${format.toUpperCase()} download started.`;
+  } catch (error) {
+    statusMessage.value = `Could not save ${format.toUpperCase()}: ${error instanceof Error ? error.message : String(error)}`;
   }
-
-  // Browser download fallback
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "") + ".ies";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  statusMessage.value = "IES download started.";
 }
-
-// Export EULUMDAT
-function exportLDT() {
-  if (!currentData.value) return;
-  let content: string;
-  try { content = serializeEULUMDAT(currentData.value); }
-  catch (error) { statusMessage.value = error instanceof Error ? error.message : String(error); return; }
-  const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  const base = currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "");
-  a.download = `${base}.ldt`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-  statusMessage.value = "LDT export started.";
-}
+function saveFile() { return saveDocument("ies"); }
+function exportLDT() { return saveDocument("ldt"); }
 
 // UI Scale Methods
 function setScale(scale: number) {

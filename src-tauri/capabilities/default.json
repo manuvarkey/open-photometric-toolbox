@@ -7,6 +7,8 @@
   ],
   "permissions": [
     "allow-list-system-font-families",
+    "allow-read-photometric-file",
+    "allow-save-photometric-file",
     "core:default",
     "dialog:allow-open",
     "dialog:allow-save",

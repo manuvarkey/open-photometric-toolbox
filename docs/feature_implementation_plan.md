@@ -1,6 +1,6 @@
 # Photometric core, vector views, and interface implementation plan
 
-Status: **requested features implemented; verification recorded, with the direct-ratio export dependency and final native workflow still open**. See the [verification record](feature_verification.md) for evidence and limits. Baseline commit: `5d18755`. This plan supersedes the follow-up list after the completed ribbon redesign; that earlier checklist remains historical acceptance evidence.
+Status: **requested features implemented; verification recorded, with the direct-ratio export dependency still open; Linux native verification completed**. See the [verification record](feature_verification.md) for evidence and limits. Baseline commit: `5d18755`. This plan supersedes the follow-up list after the completed ribbon redesign; that earlier checklist remains historical acceptance evidence.
 
 The requested work is one coordinated update. The [core investigation](core_module_findings.md) establishes the math and format defects first. Only core modules were decompiled. Interface decisions below come from the current application and the user's requirements.
 
@@ -203,7 +203,7 @@ Independent preparation may proceed in parallel, but later features must consume
 - [x] Pure-core analytic tests and independent LDT fixtures pass; errors/cancellation preserve existing documents.
 - [x] `npm test`, `npm run build`, `cargo check`, and `git diff --check` pass. Add meaningful tests for mathematical/format/state regressions, not tests that merely mirror markup.
 - [x] Check 1400 × 900 and 900 × 600, dark/light, 100%/130%; include popup placement, font search, both comparison slots, vector contours, and all dialogs.
-- [ ] Run a keyboard-only native workflow: import LDT, choose Cartesian/plane, compare independently selected A/B, change report family, and save a PDF. Also reopen exported IES/LDT and standalone HTML.
+- [x] Run a keyboard-only native workflow: import LDT, choose Cartesian/plane, compare independently selected A/B, change report family, and save a PDF. Also reopen exported IES/LDT and standalone HTML.
 - [x] Render PDFs and inspect graphs, fonts, tables, margins, page breaks, and absence of application controls.
 - [x] Retain before/after performance and bundle measurements, fixture provenance, changed numerical expectations, and remaining platform limits. Update existing documentation where earlier parity claims were disproven.
 

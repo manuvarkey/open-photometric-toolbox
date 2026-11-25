@@ -64,7 +64,7 @@ async function downloadHtmlReport() {
     .header-box { border: 1px solid #94a3b8; padding: 12px; margin-bottom: 16px; border-radius: 4px; background: #f8fafc; }
     .header-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
     .report-type-badge { background: #d97706; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 10px; text-transform: uppercase; }
-    .meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; font-size: 11px; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 3px; font-weight: bold; }
     .doc-section { margin-bottom: 16px; }
@@ -76,8 +76,8 @@ async function downloadHtmlReport() {
     .doc-badge-col { flex: none; }
     .doc-subtitle, .polar-caption { color: #64748b; }
     .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: 10px; }
-    .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
-    .meta-col { display: flex; flex-direction: column; gap: 2px; }
+    .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
+    .meta-col { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; }
     .polar-summary-section { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 14px; }
     .polar-box { display: flex; flex-direction: column; align-items: center; }
     .report-polar-svg { width: 180px; height: 180px; }
@@ -557,7 +557,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 
 .luminaire-meta-box {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px 14px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
@@ -567,6 +567,8 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 }
 
 .meta-col {
+  min-width: 0;
+  overflow-wrap: anywhere;
   display: flex;
   flex-direction: column;
   gap: 2px;

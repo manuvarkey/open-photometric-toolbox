@@ -100,6 +100,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Verification
 
-Run `npm test`, `npm run build`, and `cargo check --manifest-path src-tauri/Cargo.toml`. Browser checks use `npm run test:ui`; install its browser with `npx playwright install chromium`, or set `PHOTOMETRIC_CHROMIUM` to an installed Chromium executable. After a production build, `node tests/production-loading.mjs` verifies feature loading and recovery. Artifacts default to `/tmp/photometric-ui-checks`, configurable with `PHOTOMETRIC_ARTIFACTS`.
+Run `npm test`, `npm run build`, and `cargo check --manifest-path src-tauri/Cargo.toml`. Linux native I/O can be checked with `tests/native-io.py` on an isolated X11 session (see the verification record). Browser checks use `npm run test:ui`; install its browser with `npx playwright install chromium`, or set `PHOTOMETRIC_CHROMIUM` to an installed Chromium executable. After a production build, `node tests/production-loading.mjs` verifies feature loading and recovery. Artifacts default to `/tmp/photometric-ui-checks`, configurable with `PHOTOMETRIC_ARTIFACTS`.
 
 See the [implementation and acceptance plan](docs/feature_implementation_plan.md) and [verification record](docs/feature_verification.md) for measured results and current limits.

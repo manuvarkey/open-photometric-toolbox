@@ -25,7 +25,7 @@ Baseline: `5d18755`. Scope and design decisions are in the [implementation plan]
 | UI matrix | 1400 × 900 and 900 × 600, dark/light, 100%/130%: eight configurations; controls, dialogs, selectors and vector views pass |
 | Workflows | Independent A/B imports, Library targeting, LDT/IES export, all six new presets, dialog focus/Escape, unit/height geometry reuse, report preference persistence and browser font permission denial pass |
 | Fonts/PDF | Browser font API success is mocked with actually installed DejaVu families; DejaVu Serif reaches all three HTML/PDF reports. `pdffonts` confirms embedding. Three A4 PDFs rendered and visually inspected; report title/badge overflow was repaired |
-| Native fonts | Linux font-kit enumeration through the declared native capability returned 688 installed family options. Rust host builds with the new byte decoding and enumeration commands |
+| Native fonts | Linux font-kit enumeration through the declared native capability returned 435 installed families in the isolated desktop session. DejaVu Serif was selected with the keyboard and embedded in the native one-page A4 PDF |
 | Production loading | Startup requests shell + 3D only; illuminance/report chunks arrive on first use. Reopening uses cached chunks. An aborted report chunk produces a recovery message/button |
 
 The PDF screenshots and raw downloaded fixtures are temporary verification artifacts under `/tmp/photometric-ui-checks` and `/tmp/photometric-verification`. They are not dependencies of the tests.
@@ -36,14 +36,14 @@ The PDF screenshots and raw downloaded fixtures are temporary verification artif
 | --- | ---: | ---: |
 | Sample heatmap / field + contours | 497.3 ms | cold 9.1 ms; warm median 4.0 ms |
 | Dense 181 × 73 heatmap / field + contours | 2,720.2 ms | cold 6.7 ms; warm median 5.4 ms |
-| Shell JavaScript | 835,162 bytes | approximately 336,411 bytes |
-| Shell gzip | 219,268 bytes | approximately 104,194 bytes |
+| Shell JavaScript | 835,162 bytes | approximately 336,132 bytes |
+| Shell gzip | 219,268 bytes | approximately 104,191 bytes |
 | 3D chunk | included in shell | 474,433 bytes; 120,547 gzip |
 | Chunk-size warning | present | absent; threshold unchanged |
 
 Timings are Chromium/headless software-WebGL measurements on the same machine. Before measures pixel heatmap generation; after measures field plus contour path generation, not complete paint latency. The dense benchmark retains the same grid dimensions but corrects inconsistent pole values in the old synthetic fixture. Height/unit/theme changes reuse geometry rather than building it again.
 
-Shell size falls about 60%; the default 3D view still needs both shell and 3D chunks: approximately 810.8 kB raw / 224.7 kB gzip of JavaScript. This is a small raw startup reduction and a small gzip increase compared with the old monolith, **not** a 60% total startup reduction. All optional feature JavaScript totals approximately 897 kB; only requested features are loaded. The focused contour dependency is included in the approximately 10.4 kB illuminance chunk.
+Shell size falls about 60%; the default 3D view still needs both shell and 3D chunks: approximately 810.6 kB raw / 224.7 kB gzip of JavaScript. This is a small raw startup reduction and a small gzip increase compared with the old monolith, **not** a 60% total startup reduction. All optional feature JavaScript totals approximately 897 kB; only requested features are loaded. The focused contour dependency is included in the approximately 10.4 kB illuminance chunk.
 
 ## Manufacturer interoperability provenance
 
@@ -53,8 +53,18 @@ Source: [SPX Lighting LDT photometry](https://www.spx-lighting.com/en/ldt-photom
 
 - **IES-to-LDT export remains gated:** no independently validated generator for the ten LITG room-index direct ratios has been established. LDT sources retain supplied ratios; an export lacking them produces an actionable error. No guessed ratios or “unknown” zeros are written. This is the unresolved formula dependency from the plan, not an import limitation.
 - Type A directional analysis and non-NONE IES tilt data are rejected explicitly. This change does not validate unrelated CU/UGR/roadway classifications against a complete standards certification suite.
-- The final native keyboard-only LDT→comparison→selected-font PDF workflow has not been completed. Native font enumeration was observed, and browser HTML/PDF outputs were checked, but those are separate evidence. Native byte decoding compiles; final end-to-end native LDT decoding remains a verification gap. No Windows/macOS font enumeration or native PDF run was performed here.
+- The Linux native keyboard workflow now covers a Windows-1252 manufacturer LDT, Cartesian/plane selection, independently selected A/B sources, a real installed report family and native Print to File. The rendered one-page A4 PDF was inspected and `pdffonts` confirms DejaVu Serif embedding. Windows/macOS native font enumeration and PDF output have not been run here.
 - HTML references the chosen local font with a fallback; recipients need that installed family. Font bytes are not bundled in HTML. Browser discovery depends on Local Font Access support and explicit permission.
+
+## Native follow-up findings
+
+The new application ACL initially allowed font enumeration but omitted the existing native file commands. Actual native Open exposed `read_photometric_file not allowed`. Explicit read/save permissions are now declared in the main-window capability. Native errors remain visible in the status bar instead of silently reopening a browser file picker.
+
+File and Converter exports share one save service: desktop uses the native chooser and write command, browser uses a download, and cancellation preserves the document. Previously LDT and Converter export used only browser anchors. A native I/O smoke script exercises real read, save, reopen and cancellation. Long manufacturer lamp identifiers also exposed unequal report columns; bounded columns and wrapping now apply to preview, HTML and PDF, with a browser regression check.
+
+## Direct-ratio dependency clarified
+
+The [official LiTG 3.5 summary](https://www.litg.de/media/19228.3.5_Kurzfassung_Wirkunsgradverfahren) identifies a zonal-multiplier method for point-like sources and a strip method for linear sources. It assumes a defined distribution of luminaires in a rectangular room. This confirms why substituting `RCR = 5/k` into the existing IES approximation does not establish equivalence. The public summary does not supply the needed multipliers, strip rules or independent numerical cases. The [publisher catalogue](https://www.litg.de/Weiterbildung/LiTG-Publikationen.html) lists the full 1988 publication, ISBN 978-3-927787-01-8, with member-restricted download. No purchase or third-party contact was made. Generation remains gated until those definitions and reference cases are available; imported direct ratios continue to be preserved.
 
 ## Reproduction
 
@@ -68,5 +78,7 @@ node tests/production-loading.mjs
 node tests/illuminance-performance.mjs
 git diff --check
 ```
+
+For Linux native I/O, run `cargo build --manifest-path src-tauri/Cargo.toml`, start the app and Vite on an isolated X11 display/session, then `/usr/bin/python3 tests/native-io.py [source.ldt]`. The script needs Python GI/AT-SPI, XTest and `xwininfo`; it uses temporary files and does not print. The verification session used Xvfb unpacked under `/tmp`, without a system install. Native PDF verification separately used GTK Print to File.
 
 Set `PHOTOMETRIC_CHROMIUM` to use an existing Chromium executable and `PHOTOMETRIC_ARTIFACTS` to choose an output directory. Browser UI tests use a development server; production loading tests start an isolated local preview after the build.

@@ -1,0 +1,9 @@
+[[permission]]
+identifier = "allow-read-photometric-file"
+description = "Allows the main window to read a photometric file selected by the user."
+commands.allow = ["read_photometric_file"]
+
+[[permission]]
+identifier = "allow-save-photometric-file"
+description = "Allows the main window to save an IES or LDT file selected by the user."
+commands.allow = ["save_photometric_file"]

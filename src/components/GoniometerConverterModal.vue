@@ -4,6 +4,7 @@ import AppIcon from "./AppIcon.vue";
 import type { PhotometricData } from "../core/types";
 import { convertPhotometric } from "../core/goniometerConversion";
 import ThemedSelect from "./ThemedSelect.vue";
+import { savePhotometricText } from "../services/photometricFiles";
 import { serializeIES } from "../core/iesParser";
 import { serializeEULUMDAT } from "../core/eulumdatConverter";
 
@@ -40,16 +41,13 @@ function applyConversion() {
   emit("apply", convertedData.value.data);
   emit("close");
 }
-function downloadConverted(format: "ies" | "ldt") {
+async function downloadConverted(format: "ies" | "ldt") {
   conversionError.value = "";
   const data = convertedData.value.data;
   if (!data) return;
   try {
     const text = format === "ies" ? serializeIES(data) : serializeEULUMDAT(data);
-    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
-    const anchor = document.createElement("a");
-    anchor.href = url; anchor.download = data.fileName.replace(/\.(ies|ldt|txt)$/i, "") + `.${format}`;
-    anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    await savePhotometricText(text, data.fileName, format);
   } catch (error) { conversionError.value = error instanceof Error ? error.message : String(error); }
 }
 </script>
