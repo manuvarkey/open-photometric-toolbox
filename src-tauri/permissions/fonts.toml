@@ -1,0 +1,4 @@
+[[permission]]
+identifier = "allow-list-system-font-families"
+description = "Allows the main window to read installed font family names for reports."
+commands.allow = ["list_system_font_families"]

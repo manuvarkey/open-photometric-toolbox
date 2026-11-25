@@ -10,6 +10,7 @@ import type {
   UGRTableRow,
   ZonalLumenZone,
 } from "./types";
+import { anglesFromDirection, createCandelaSampler, createFluxIntegrator, directionFromAngles } from "./photometricSampling";
 
 /**
  * Decompiled from LAICalcNETRev2.dll (gsbCalcCU & gfnCalcCUShort)
@@ -146,18 +147,20 @@ export function computePhotometrics(
   luminousLength = 0.4,
   luminousWidth = 0.4,
   luminousHeight = 0.1,
-  unitsType: 1 | 2 = 2
+  unitsType: 1 | 2 = 2,
+  photometricType: 1 | 2 | 3 = 1
 ): PhotometricCalculations {
-  const numV = verticalAngles.length;
-  const numH = horizontalAngles.length;
+  const web = { verticalAngles, horizontalAngles, candela, multiplier, photometricType };
+  const sample = createCandelaSampler(web);
+  const integrateFlux = createFluxIntegrator(web, sample);
 
   // 1. Locate maximum candela
   let maxIntensity = 0;
   let maxV = 0;
   let maxH = 0;
 
-  for (let h = 0; h < numH; h++) {
-    for (let v = 0; v < numV; v++) {
+  for (let h = 0; h < horizontalAngles.length; h++) {
+    for (let v = 0; v < verticalAngles.length; v++) {
       const val = candela[h][v] * multiplier;
       if (val > maxIntensity) {
         maxIntensity = val;
@@ -167,35 +170,22 @@ export function computePhotometrics(
     }
   }
 
+  const peakDirection = anglesFromDirection(1, directionFromAngles(photometricType, maxV, maxH));
+  // Remaining geometric classifications use canonical C axes. Preserve the
+  // measured/native peak labels above; never interpret signed B angles as C.
+  if (photometricType === 2) {
+    verticalAngles = Array.from({ length: 73 }, (_, i) => i * 2.5);
+    horizontalAngles = Array.from({ length: 73 }, (_, i) => i * 5);
+    candela = horizontalAngles.map(h => verticalAngles.map(v => sample(v, h)));
+    multiplier = 1;
+  }
+  const numV = verticalAngles.length;
+  const numH = horizontalAngles.length;
+
   // 2. Compute Zonal Lumens using standard spherical integration
   // Standard 10-degree zones: 0-10, 10-20, ... 170-180
   const zoneBounds = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150, 160, 170, 180];
   const zoneLumens: number[] = new Array(zoneBounds.length - 1).fill(0);
-
-  // Compute average candela for each vertical angle across available horizontal slices
-  const avgCandelaByV: number[] = new Array(numV).fill(0);
-  for (let v = 0; v < numV; v++) {
-    let sum = 0;
-    for (let h = 0; h < numH; h++) {
-      sum += candela[h][v] * multiplier;
-    }
-    avgCandelaByV[v] = sum / (numH || 1);
-  }
-
-  // Interpolate candela at arbitrary vertical angle (degrees)
-  function getAvgCandelaAt(deg: number): number {
-    if (deg <= verticalAngles[0]) return avgCandelaByV[0];
-    if (deg >= verticalAngles[numV - 1]) return avgCandelaByV[numV - 1];
-    for (let i = 0; i < numV - 1; i++) {
-      if (deg >= verticalAngles[i] && deg <= verticalAngles[i + 1]) {
-        const span = verticalAngles[i + 1] - verticalAngles[i];
-        if (span === 0) return avgCandelaByV[i];
-        const t = (deg - verticalAngles[i]) / span;
-        return avgCandelaByV[i] * (1 - t) + avgCandelaByV[i + 1] * t;
-      }
-    }
-    return avgCandelaByV[0];
-  }
 
   let totalLuminaireLumens = 0;
   let downwardLumens = 0;
@@ -204,19 +194,7 @@ export function computePhotometrics(
   for (let z = 0; z < zoneBounds.length - 1; z++) {
     const v1 = zoneBounds[z];
     const v2 = zoneBounds[z + 1];
-    const r1 = (v1 * Math.PI) / 180;
-    const r2 = (v2 * Math.PI) / 180;
-    
-    // Zonal constant: 2 * pi * (cos(r1) - cos(r2))
-    const zonalFactor = 2 * Math.PI * (Math.cos(r1) - Math.cos(r2));
-    
-    // Midpoint intensity estimate (Simpson's 3-point rule)
-    const iMid = getAvgCandelaAt((v1 + v2) / 2);
-    const i1 = getAvgCandelaAt(v1);
-    const i2 = getAvgCandelaAt(v2);
-    const avgI = (i1 + 4 * iMid + i2) / 6;
-
-    const lumens = avgI * zonalFactor;
+    const lumens = integrateFlux(v1, v2);
     zoneLumens[z] = lumens;
     totalLuminaireLumens += lumens;
 
@@ -227,7 +205,7 @@ export function computePhotometrics(
     }
   }
 
-  const totalLampLumens = lampCount * (lumensPerLamp > 0 ? lumensPerLamp : totalLuminaireLumens);
+  const totalLampLumens = lumensPerLamp > 0 ? lampCount * lumensPerLamp : totalLuminaireLumens;
   const efficiency = totalLampLumens > 0 ? (totalLuminaireLumens / totalLampLumens) * 100 : 100;
   const efficacyLER = inputWatts > 0 ? totalLuminaireLumens / inputWatts : 0;
 
@@ -241,20 +219,7 @@ export function computePhotometrics(
 
   // 3. CIE Luminaire Classification & CIE Flux Code (CIE 97 / EN 13032 / DIN 5040)
   function integrateSubZone(startDeg: number, endDeg: number): number {
-    const step = 2.0;
-    let sum = 0;
-    for (let a = startDeg; a < endDeg; a += step) {
-      const b = Math.min(endDeg, a + step);
-      const r1 = (a * Math.PI) / 180;
-      const r2 = (b * Math.PI) / 180;
-      const zonalFactor = 2 * Math.PI * (Math.cos(r1) - Math.cos(r2));
-      const iMid = getAvgCandelaAt((a + b) / 2);
-      const i1 = getAvgCandelaAt(a);
-      const i2 = getAvgCandelaAt(b);
-      const avgI = (i1 + 4 * iMid + i2) / 6;
-      sum += avgI * zonalFactor;
-    }
-    return sum;
+    return integrateFlux(startDeg, endDeg);
   }
 
   const flux41_4 = integrateSubZone(0, 41.4);
@@ -319,15 +284,14 @@ export function computePhotometrics(
   // Backlight: 90 to 270 deg azimuth (or half of bilateral)
   // Uplight: > 90 deg vertical
   // Glare: High angle 60-90 deg
+  const back = (start: number, end: number) => integrateFlux(start, end, 90, 270);
+  const bl = back(0, 30), bm = back(30, 60), bh = back(60, 80), bvh = back(80, 90);
   const bugZones = {
-    fl: zoneLumens.slice(0, 3).reduce((a, b) => a + b, 0) * 0.5,
-    fm: zoneLumens.slice(3, 6).reduce((a, b) => a + b, 0) * 0.5,
-    fh: zoneLumens.slice(6, 8).reduce((a, b) => a + b, 0) * 0.5,
-    fvh: zoneLumens[8] * 0.5,
-    bl: zoneLumens.slice(0, 3).reduce((a, b) => a + b, 0) * 0.5,
-    bm: zoneLumens.slice(3, 6).reduce((a, b) => a + b, 0) * 0.5,
-    bh: zoneLumens.slice(6, 8).reduce((a, b) => a + b, 0) * 0.5,
-    bvh: zoneLumens[8] * 0.5,
+    fl: integrateFlux(0, 30) - bl,
+    fm: integrateFlux(30, 60) - bm,
+    fh: integrateFlux(60, 80) - bh,
+    fvh: integrateFlux(80, 90) - bvh,
+    bl, bm, bh, bvh,
     ul: zoneLumens[9],
     uh: zoneLumens.slice(10).reduce((a, b) => a + b, 0),
   };
@@ -378,8 +342,8 @@ export function computePhotometrics(
   };
 
   // 5. Roadway RP-8 Classification
-  const radV = (maxV * Math.PI) / 180;
-  const radH = (maxH * Math.PI) / 180;
+  const radV = (peakDirection.vertical * Math.PI) / 180;
+  const radH = (peakDirection.horizontal * Math.PI) / 180;
   const transverseRatio = Math.abs(Math.sin(radH) * Math.tan(radV));
   const longitudinalRatio = Math.abs(Math.cos(radH) * Math.tan(radV));
   const isSymmetric = horizontalAngles.length <= 1;
@@ -398,13 +362,13 @@ export function computePhotometrics(
   }
 
   let longitudinalClassification: RoadwayClassification["longitudinalClassification"] = "Medium";
-  if (maxV < 45) {
+  if (peakDirection.vertical < 45) {
     longitudinalClassification = "Very Short";
-  } else if (maxV < 66) {
+  } else if (peakDirection.vertical < 66) {
     longitudinalClassification = "Short";
-  } else if (maxV < 75) {
+  } else if (peakDirection.vertical < 75) {
     longitudinalClassification = "Medium";
-  } else if (maxV < 80.5) {
+  } else if (peakDirection.vertical < 80.5) {
     longitudinalClassification = "Long";
   } else {
     longitudinalClassification = "Very Long";
@@ -513,19 +477,7 @@ export function computePhotometrics(
   const h90Idx = horizontalAngles.findIndex((a) => Math.abs(a - 90) < 8) >= 0 ? horizontalAngles.findIndex((a) => Math.abs(a - 90) < 8) : 0;
 
   function getIntensity(vDeg: number, hIdx: number): number {
-    let lower = 0, upper = numV - 1;
-    for (let i = 0; i < numV - 1; i++) {
-      if (verticalAngles[i] <= vDeg && verticalAngles[i + 1] >= vDeg) {
-        lower = i;
-        upper = i + 1;
-        break;
-      }
-    }
-    const span = (verticalAngles[upper] - verticalAngles[lower]) || 1;
-    const factor = (vDeg - verticalAngles[lower]) / span;
-    const i1 = (candela[hIdx]?.[lower] ?? 0) * multiplier;
-    const i2 = (candela[hIdx]?.[upper] ?? 0) * multiplier;
-    return i1 + (i2 - i1) * factor;
+    return sample(vDeg, horizontalAngles[hIdx]);
   }
 
   const luminanceTable: LuminanceRow[] = angles.map((ang) => {
@@ -571,7 +523,7 @@ export function computePhotometrics(
   // 9. Spacing Criteria & Coefficients of Utilization (CU) Zonal Cavity Table
   let sc0 = 1.25;
   let sc90 = 1.25;
-  const nadir = avgCandelaByV[0] || maxIntensity;
+  const nadir = sample(0, 0);
   if (nadir > 0) {
     const halfNadir = nadir * 0.5;
     for (let v = 1; v < numV; v++) {

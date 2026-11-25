@@ -1,5 +1,7 @@
 # Ribbon redesign implementation plan
 
+The ribbon redesign below is complete. The next requested work is specified in the [core, vector views, and interface implementation plan](docs/feature_implementation_plan.md), informed by the [core-only binary investigation](docs/core_module_findings.md).
+
 ## Goal
 
 Reduce the ribbon from nine tabs to five and give each action a predictable location. Keep the GEstimator-aligned theme, desktop titlebar, photometric calculations, file formats, and report outputs.

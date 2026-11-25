@@ -4,6 +4,8 @@ This repository contains the decompiled artifacts, extracted modules, and techni
 
 ## Documentation Index
 
+Current work: [Core, vector views, and interface implementation plan](./feature_implementation_plan.md), [verification results and limits](./feature_verification.md), with [core-only investigation findings](./core_module_findings.md). These findings qualify earlier parity claims in the historical specifications below.
+
 1. **[Installer & Extraction Analysis](./installer_and_extraction.md)**
    * Complete binary layout of the PE32 executable and overlay.
    * Reverse-engineered specification of the InstallShield `ISSetupStream` v4 container format.

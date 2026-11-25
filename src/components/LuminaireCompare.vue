@@ -1,29 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import { parseIES } from "../core/iesParser";
-import {
-  COMMERCIAL_DOWNLIGHT_IES,
-  FLOODLIGHT_NEMA_IES,
-  ROADWAY_COBRA_HEAD_IES,
-} from "../core/samples";
+import { computed } from "vue";
+import { polarPath } from "../utils/plotPaths";
 import type { PhotometricData } from "../core/types";
-
 const props = defineProps<{
   primaryData: PhotometricData | null;
-  secondaryData?: PhotometricData | null;
+  secondaryData: PhotometricData | null;
 }>();
-
-const selectedSampleB = ref<"roadway" | "downlight" | "floodlight">("roadway");
-const compareData = computed<PhotometricData | null>(() => {
-  if (props.secondaryData) return props.secondaryData;
-  if (selectedSampleB.value === "roadway") {
-    return parseIES(ROADWAY_COBRA_HEAD_IES, "Roadway_150W.ies");
-  } else if (selectedSampleB.value === "downlight") {
-    return parseIES(COMMERCIAL_DOWNLIGHT_IES, "Downlight_40W.ies");
-  } else {
-    return parseIES(FLOODLIGHT_NEMA_IES, "Floodlight_250W.ies");
-  }
-});
+const compareData = computed(() => props.secondaryData);
 
 function calcDelta(a: number, b: number): { text: string; isPositive: boolean } {
   if (!b) return { text: a === 0 ? "0.0%" : "—", isPositive: true };
@@ -106,35 +89,8 @@ const maxCandelaBoth = computed(() => {
   return Math.max(maxA, maxB);
 });
 
-function getCurvePath(data: PhotometricData | null): string {
-  if (!data) return "";
-  const numV = data.verticalAngles.length;
-  const mult = data.multiplier;
-  const maxVal = maxCandelaBoth.value;
-
-  const points: Array<[number, number]> = [];
-  for (let i = 0; i < numV; i++) {
-    const deg = data.verticalAngles[i];
-    const cd = (data.candela[0]?.[i] ?? 0) * mult;
-    const r = (cd / maxVal) * rMax;
-    const rad = (deg * Math.PI) / 180 + Math.PI / 2;
-    points.push([cx + r * Math.cos(rad), cy + r * Math.sin(rad)]);
-  }
-
-  // Symmetrical opposite side
-  const oppositePoints: Array<[number, number]> = [];
-  for (let i = numV - 1; i >= 0; i--) {
-    const deg = data.verticalAngles[i];
-    const cd = (data.candela[0]?.[i] ?? 0) * mult;
-    const r = (cd / maxVal) * rMax;
-    const rad = (-deg * Math.PI) / 180 + Math.PI / 2;
-    oppositePoints.push([cx + r * Math.cos(rad), cy + r * Math.sin(rad)]);
-  }
-
-  const all = [...points, ...oppositePoints];
-  return (
-    all.map(([x, y], idx) => `${idx === 0 ? "M" : "L"} ${x.toFixed(1)} ${y.toFixed(1)}`).join(" ") + " Z"
-  );
+function getCurvePath(data: PhotometricData | null) {
+  return polarPath(data, cx, cy, rMax, maxCandelaBoth.value);
 }
 
 const pathA = computed(() => getCurvePath(props.primaryData));
@@ -173,10 +129,10 @@ const pathB = computed(() => getCurvePath(compareData.value));
             <line x1="20" :y1="cy" x2="380" :y2="cy" stroke="var(--line)" />
 
             <!-- Curve A -->
-            <path :d="pathA" fill="rgba(6, 182, 212, 0.22)" stroke="#06b6d4" stroke-width="2" />
+            <path :d="pathA" fill="rgba(6, 182, 212, 0.22)" stroke="var(--graph-curve-0)" stroke-width="2" />
 
             <!-- Curve B -->
-            <path :d="pathB" fill="rgba(245, 158, 11, 0.22)" stroke="#f59e0b" stroke-width="2" />
+            <path :d="pathB" fill="rgba(245, 158, 11, 0.22)" stroke="var(--graph-curve-max)" stroke-width="2" />
           </svg>
         </div>
       </div>
@@ -364,16 +320,19 @@ const pathB = computed(() => getCurvePath(compareData.value));
 
 .val-a {
   color: #06b6d4;
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 .val-b {
   color: #f59e0b;
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 .delta-tag {
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
   padding: 2px 6px;
   border-radius: 4px;

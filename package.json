@@ -6,24 +6,27 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "node tests/metadata-roundtrip.mjs",
+    "test": "node tests/metadata-roundtrip.mjs && node tests/core-math.mjs && node tests/ldt-format.mjs",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "tauri": "tauri",
+    "test:ui": "node tests/ui-workflow.mjs"
   },
   "dependencies": {
-    "@primeuix/themes": "^1.0.0",
     "@tauri-apps/api": "^2.2.0",
     "@tauri-apps/plugin-dialog": "^2.2.0",
     "@tauri-apps/plugin-fs": "^2.2.0",
+    "d3-contour": "^4.0.3",
     "primevue": "^4.2.0",
     "three": "^0.170.0",
     "vue": "^3.5.13"
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.2.0",
+    "@types/d3-contour": "^3.0.6",
     "@types/three": "^0.170.0",
     "@vitejs/plugin-vue": "^5.2.1",
     "esbuild": "^0.25.12",
+    "playwright": "^1.65.1",
     "typescript": "^5.6.3",
     "vite": "^6.0.0",
     "vue-tsc": "^2.2.0"

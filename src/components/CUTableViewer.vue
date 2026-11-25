@@ -158,7 +158,8 @@ function getCellColor(val: number): string {
 .cu-table {
   width: 100%;
   border-collapse: collapse;
-  font-family: var(--ui-font-mono, monospace);
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-size: 0.8rem;
 }
 

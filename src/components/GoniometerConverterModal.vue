@@ -2,7 +2,8 @@
 import { computed, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import type { PhotometricData } from "../core/types";
-import { computePhotometrics } from "../core/calculations";
+import { convertPhotometric } from "../core/goniometerConversion";
+import ThemedSelect from "./ThemedSelect.vue";
 import { serializeIES } from "../core/iesParser";
 import { serializeEULUMDAT } from "../core/eulumdatConverter";
 
@@ -29,177 +30,27 @@ const targetTypeName = computed(() =>
 // Angular step resolution
 const angleResolution = ref<"1" | "2.5" | "5">("2.5");
 
-// Bilinear interpolation for arbitrary angle query in source web
-function sampleCandela(vDeg: number, hDeg: number): number {
-  const vAngles = props.data.verticalAngles;
-  const hAngles = props.data.horizontalAngles;
-  const candela = props.data.candela;
-  const mult = props.data.multiplier;
-
-  // Clamp vDeg
-  const vClamped = Math.max(vAngles[0], Math.min(vAngles[vAngles.length - 1], vDeg));
-  // Normalize hDeg to 0..360
-  let hNorm = (hDeg % 360 + 360) % 360;
-
-  // Find bounding vertical angles
-  let v0Idx = 0;
-  for (let i = 0; i < vAngles.length - 1; i++) {
-    if (vClamped >= vAngles[i] && vClamped <= vAngles[i + 1]) {
-      v0Idx = i;
-      break;
-    }
-  }
-  const v1Idx = Math.min(vAngles.length - 1, v0Idx + 1);
-  const v0 = vAngles[v0Idx];
-  const v1 = vAngles[v1Idx];
-  const tv = v1 === v0 ? 0 : (vClamped - v0) / (v1 - v0);
-
-  // If single horizontal angle (symmetric)
-  if (hAngles.length <= 1) {
-    const c0 = (candela[0]?.[v0Idx] ?? 0) * mult;
-    const c1 = (candela[0]?.[v1Idx] ?? 0) * mult;
-    return c0 * (1 - tv) + c1 * tv;
-  }
-
-  // Find bounding horizontal angles
-  let h0Idx = 0;
-  for (let i = 0; i < hAngles.length - 1; i++) {
-    if (hNorm >= hAngles[i] && hNorm <= hAngles[i + 1]) {
-      h0Idx = i;
-      break;
-    }
-  }
-  const h1Idx = (h0Idx + 1) % hAngles.length;
-  const h0 = hAngles[h0Idx];
-  const h1 = hAngles[h1Idx];
-  const th = h1 === h0 ? 0 : (hNorm - h0) / (h1 - h0);
-
-  const c00 = (candela[h0Idx]?.[v0Idx] ?? 0) * mult;
-  const c01 = (candela[h0Idx]?.[v1Idx] ?? 0) * mult;
-  const c10 = (candela[h1Idx]?.[v0Idx] ?? 0) * mult;
-  const c11 = (candela[h1Idx]?.[v1Idx] ?? 0) * mult;
-
-  const top = c00 * (1 - tv) + c01 * tv;
-  const bottom = c10 * (1 - tv) + c11 * tv;
-  return top * (1 - th) + bottom * th;
-}
-
-// Convert goniometer web
-function generateConvertedData(): PhotometricData {
-  const step = parseFloat(angleResolution.value);
-
-  let newVAngles: number[] = [];
-  let newHAngles: number[] = [];
-  let newCandela: number[][] = [];
-
-  if (targetType.value === 2) {
-    // Converting Type C to Type B
-    // In Type B: V angles are -90 to +90 (or 0 to 90 for bilateral), H angles are -90 to +90 (or 0 to 90)
-    for (let v = 0; v <= 90; v += step) newVAngles.push(v);
-    for (let h = 0; h <= 90; h += step) newHAngles.push(h);
-
-    newCandela = newHAngles.map((hB) => {
-      return newVAngles.map((vB) => {
-        // Map Type B (hB, vB) to Type C (theta, psi)
-        const radH = (hB * Math.PI) / 180;
-        const radV = (vB * Math.PI) / 180;
-        const cosTheta = Math.cos(radH) * Math.cos(radV);
-        const thetaDeg = (Math.acos(Math.max(-1, Math.min(1, cosTheta))) * 180) / Math.PI;
-        const psiRad = Math.atan2(Math.sin(radH), Math.sin(radV) * Math.cos(radH));
-        const psiDeg = ((psiRad * 180) / Math.PI + 360) % 360;
-        return Math.round(sampleCandela(thetaDeg, psiDeg) * 10) / 10;
-      });
-    });
-  } else {
-    // Converting Type B to Type C
-    for (let v = 0; v <= 180; v += step) newVAngles.push(v);
-    // 0 to 180 or 0 to 360
-    for (let h = 0; h <= 180; h += Math.max(5, step * 2)) newHAngles.push(h);
-
-    newCandela = newHAngles.map((hC) => {
-      return newVAngles.map((vC) => {
-        // Map Type C (vC, hC) to Type B (hB, vB)
-        const radV = (vC * Math.PI) / 180;
-        const radH = (hC * Math.PI) / 180;
-        const sinHB = Math.sin(radV) * Math.sin(radH);
-        const hBDeg = (Math.asin(Math.max(-1, Math.min(1, sinHB))) * 180) / Math.PI;
-        const sinVB = Math.sin(radV) * Math.cos(radH);
-        const vBDeg = (Math.asin(Math.max(-1, Math.min(1, sinVB))) * 180) / Math.PI;
-        return Math.round(sampleCandela(Math.abs(vBDeg), Math.abs(hBDeg)) * 10) / 10;
-      });
-    });
-  }
-
-  const baseName = props.data.fileName.replace(/\.ies$/i, "");
-  const newFileName = `${baseName}_Type${targetType.value === 1 ? "C" : "B"}.ies`;
-
-  const newKeywords = {
-    ...props.data.keywords,
-    "TEST": `${props.data.keywords["TEST"] || "Goniometer Conversion"} (Converted to Type ${targetType.value === 1 ? "C" : "B"})`,
-    "CONVERSION": `Converted via LAIGlareNet Convert_${currentType.value === 1 ? "CB" : "BC"} algorithm`,
-  };
-
-  const calculated = computePhotometrics(
-    newVAngles,
-    newHAngles,
-    newCandela,
-    props.data.lampCount,
-    props.data.lumensPerLamp,
-    1.0,
-    props.data.inputWatts,
-    props.data.luminousLength,
-    props.data.luminousWidth,
-    props.data.luminousHeight,
-    props.data.unitsType
-  );
-
-  return {
-    ...props.data,
-    fileName: newFileName,
-    photometricType: targetType.value,
-    multiplier: 1.0,
-    numVerticalAngles: newVAngles.length,
-    numHorizontalAngles: newHAngles.length,
-    verticalAngles: newVAngles,
-    horizontalAngles: newHAngles,
-    candela: newCandela,
-    keywords: newKeywords,
-    calculated,
-  };
-}
-
+const conversionError = ref("");
+const convertedData = computed(() => {
+  try { return { data: convertPhotometric(props.data, targetType.value, Number(angleResolution.value)), error: "" }; }
+  catch (error) { return { data: null, error: error instanceof Error ? error.message : String(error) }; }
+});
 function applyConversion() {
-  const converted = generateConvertedData();
-  emit("apply", converted);
+  if (!convertedData.value.data) return;
+  emit("apply", convertedData.value.data);
   emit("close");
 }
-
-function downloadConvertedIES() {
-  const converted = generateConvertedData();
-  const text = serializeIES(converted);
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = converted.fileName;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
-function downloadConvertedLDT() {
-  const converted = generateConvertedData();
-  const text = serializeEULUMDAT(converted);
-  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = converted.fileName.replace(/\.ies$/i, ".ldt");
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+function downloadConverted(format: "ies" | "ldt") {
+  conversionError.value = "";
+  const data = convertedData.value.data;
+  if (!data) return;
+  try {
+    const text = format === "ies" ? serializeIES(data) : serializeEULUMDAT(data);
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    const anchor = document.createElement("a");
+    anchor.href = url; anchor.download = data.fileName.replace(/\.(ies|ldt|txt)$/i, "") + `.${format}`;
+    anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (error) { conversionError.value = error instanceof Error ? error.message : String(error); }
 }
 </script>
 
@@ -234,10 +85,7 @@ function downloadConvertedLDT() {
 
             <div class="config-item">
               <label for="converter-field-1">Target Goniometer Type:</label>
-              <select id="converter-field-1" v-model="targetType" class="select-field">
-                <option :value="1">Type C (Architectural / Roadway)</option>
-                <option :value="2">Type B (Floodlight / Projector)</option>
-              </select>
+              <ThemedSelect label="Target Goniometer Type" v-model="targetType" :options="[{label:'Type C (Architectural / Roadway)',value:1},{label:'Type B (Floodlight / Projector)',value:2}]" />
               <span class="subtext">Transforms coordinates via spherical cosine matrix</span>
             </div>
           </div>
@@ -262,31 +110,27 @@ function downloadConvertedLDT() {
           </div>
         </div>
 
-        <!-- Technical Algorithm Reference -->
         <div class="algorithm-spec">
-          <div class="spec-title">
-            <AppIcon name="info" :size="15" />
-            <span>Mathematical Transform Engine (from LAIGlareNet.dll)</span>
-          </div>
-          <p>
-            Transforms rectangular projector coordinates $(H, V)$ to architectural spherical angles $(\theta, \psi)$:
-            $$\cos\theta = \cos H \cos V, \quad \psi = \arctan2(\sin H, \sin V \cos H)$$
-            Interpolates intermediate intensities using bilinear interpolation. Check the converted flux before use.
-          </p>
+          <div class="spec-title"><AppIcon name="convert" :size="15" /><span>Conversion result</span></div>
+          <p>Source: {{ data.calculated.totalLuminaireLumens.toLocaleString() }} lm</p>
+          <p v-if="convertedData.data">Converted: {{ convertedData.data.calculated.totalLuminaireLumens.toLocaleString() }} lm · {{ convertedData.data.numHorizontalAngles }} × {{ convertedData.data.numVerticalAngles }} angles</p>
+          <p v-if="targetType === 2 && data.calculated.upwardLumens > 0.1" role="note">Type B covers the forward hemisphere. This conversion excludes {{ data.calculated.upwardLumens.toFixed(1) }} lm of uplight; intensities are not rescaled.</p>
+          <p>Angular resampling can slightly change integrated flux. Use finer sampling for narrow beams.</p>
+          <p v-if="convertedData.error || conversionError" class="conversion-error" role="alert">{{ convertedData.error || conversionError }}</p>
         </div>
       </div>
 
       <!-- Footer Actions -->
       <div class="modal-footer">
-        <button class="button secondary" @click="downloadConvertedLDT">
+        <button class="button secondary" @click="downloadConverted('ldt')" :disabled="!convertedData.data">
           <AppIcon name="convert" :size="14" />
           <span>Export LDT</span>
         </button>
-        <button class="button secondary" @click="downloadConvertedIES">
+        <button class="button secondary" @click="downloadConverted('ies')" :disabled="!convertedData.data">
           <AppIcon name="save" :size="14" />
           <span>Save IES</span>
         </button>
-        <button class="button primary" @click="applyConversion">
+        <button class="button primary" @click="applyConversion" :disabled="!convertedData.data">
           <AppIcon name="check" :size="14" />
           <span>Apply</span>
         </button>
@@ -512,4 +356,5 @@ function downloadConvertedLDT() {
   color: var(--text, #edebe8);
   background: var(--hover, #33333d);
 }
+.conversion-error { margin-top: 8px; color: var(--error-text); }
 </style>

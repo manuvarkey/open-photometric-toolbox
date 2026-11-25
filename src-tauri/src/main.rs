@@ -1,10 +1,36 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 use tauri::Manager;
+use std::sync::OnceLock;
+
+static FONT_FAMILIES: OnceLock<Result<Vec<String>, String>> = OnceLock::new();
+
+#[tauri::command]
+async fn list_system_font_families() -> Result<Vec<String>, String> {
+    tauri::async_runtime::spawn_blocking(|| {
+        FONT_FAMILIES.get_or_init(|| {
+            let mut families = font_kit::source::SystemSource::new().all_families()
+                .map_err(|error| format!("Could not list system fonts: {error}"))?;
+            families.retain(|family| !family.trim().is_empty());
+            families.sort_by_key(|family| family.to_lowercase());
+            families.dedup_by(|a, b| a.eq_ignore_ascii_case(b));
+            Ok(families)
+        }).clone()
+    }).await.map_err(|error| format!("Font discovery failed: {error}"))?
+}
 
 #[tauri::command]
 fn read_photometric_file(path: String) -> Result<String, String> {
-    std::fs::read_to_string(&path).map_err(|e| format!("Failed to read file: {}", e))
+    let bytes = std::fs::read(&path).map_err(|error| format!("Failed to read file: {error}"))?;
+    match String::from_utf8(bytes) {
+        Ok(text) => Ok(text),
+        Err(error) => {
+            let bytes = error.into_bytes();
+            let (text, _, invalid) = encoding_rs::WINDOWS_1252.decode(&bytes);
+            if invalid { return Err("The photometric file contains invalid text encoding.".into()); }
+            Ok(text.into_owned())
+        }
+    }
 }
 
 #[tauri::command]
@@ -63,7 +89,8 @@ fn main() {
         })
         .invoke_handler(tauri::generate_handler![
             read_photometric_file,
-            save_photometric_file
+            save_photometric_file,
+            list_system_font_families
         ])
         .run(tauri::generate_context!())
         .expect("error while running Open Photometric Toolbox");

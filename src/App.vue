@@ -1,30 +1,42 @@
 <script setup lang="ts">
-import { computed, onMounted, onBeforeUnmount, nextTick, ref, watch } from "vue";
+import { computed, onMounted, onBeforeUnmount, nextTick, ref, shallowRef, defineAsyncComponent, watch, h, type AsyncComponentLoader } from "vue";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import AppIcon from "./components/AppIcon.vue";
-import BUGRatingViewer from "./components/BUGRatingViewer.vue";
-import CIEClassificationModal from "./components/CIEClassificationModal.vue";
-import CUTableViewer from "./components/CUTableViewer.vue";
-import GoniometerConverterModal from "./components/GoniometerConverterModal.vue";
-import IsoIlluminanceViewer from "./components/IsoIlluminanceViewer.vue";
-import LuminaireCompare from "./components/LuminaireCompare.vue";
-import NewLuminaireModal from "./components/NewLuminaireModal.vue";
-import Photometric3DViewer from "./components/Photometric3DViewer.vue";
-import PhotometricEditorModal from "./components/PhotometricEditorModal.vue";
-import PhotometricLibraryCatalog from "./components/PhotometricLibraryCatalog.vue";
-import Polar2DViewer from "./components/Polar2DViewer.vue";
-import ReportViewer from "./components/ReportViewer.vue";
+import ThemedSelect from "./components/ThemedSelect.vue";
+import { useLuminaireCatalog } from "./composables/useLuminaireCatalog";
+import { parsePhotometric } from "./core/photometricParser";
+import { readPhotometricText } from "./services/photometricFiles";
+import { toTypeCData } from "./core/goniometerConversion";
+// Keep shell settings available while optional tool chunks load or fail.
+function lazyTool(loader: AsyncComponentLoader) {
+  return defineAsyncComponent({
+    loader,
+    delay: 150,
+    loadingComponent: { render: () => h('div', { class: 'tool-load-state', role: 'status' }, 'Loading tool…') },
+    errorComponent: { render: () => h('div', { class: 'tool-load-state', role: 'alert' }, [
+      h('p', 'The tool could not be loaded. Reload the application to try again.'),
+      h('button', { onClick: () => window.location.reload() }, 'Reload application'),
+    ]) },
+  });
+}
+const BUGRatingViewer = lazyTool(() => import("./components/BUGRatingViewer.vue"));
+const CIEClassificationModal = lazyTool(() => import("./components/CIEClassificationModal.vue"));
+const CUTableViewer = lazyTool(() => import("./components/CUTableViewer.vue"));
+const GoniometerConverterModal = lazyTool(() => import("./components/GoniometerConverterModal.vue"));
+const IsoIlluminanceViewer = lazyTool(() => import("./components/IsoIlluminanceViewer.vue"));
+const LuminaireCompare = lazyTool(() => import("./components/LuminaireCompare.vue"));
+const NewLuminaireModal = lazyTool(() => import("./components/NewLuminaireModal.vue"));
+const Photometric3DViewer = lazyTool(() => import("./components/Photometric3DViewer.vue"));
+const PhotometricEditorModal = lazyTool(() => import("./components/PhotometricEditorModal.vue"));
+const PhotometricLibraryCatalog = lazyTool(() => import("./components/PhotometricLibraryCatalog.vue"));
+const Polar2DViewer = lazyTool(() => import("./components/Polar2DViewer.vue"));
+const ReportViewer = lazyTool(() => import("./components/ReportViewer.vue"));
 import RibbonToolbar from "./components/RibbonToolbar.vue";
-import ZonalLumensTable from "./components/ZonalLumensTable.vue";
+const ZonalLumensTable = lazyTool(() => import("./components/ZonalLumensTable.vue"));
 import { serializeEULUMDAT } from "./core/eulumdatConverter";
-import { parseIES, serializeIES } from "./core/iesParser";
-import {
-  COMMERCIAL_DOWNLIGHT_IES,
-  FLOODLIGHT_NEMA_IES,
-  ROADWAY_COBRA_HEAD_IES,
-} from "./core/samples";
+import { serializeIES } from "./core/iesParser";
 import type { PhotometricData } from "./core/types";
 
 type RibbonTab = "file" | "visualize" | "analysis" | "compare" | "reports";
@@ -40,7 +52,14 @@ type ViewportMode =
   | "compare";
 
 // State
-const currentData = ref<PhotometricData | null>(null);
+const currentData = shallowRef<PhotometricData | null>(null);
+const library = useLuminaireCatalog(currentData);
+const { selectionA, selectionB, primary: comparisonPrimaryData, secondary: comparisonSecondaryData, options: comparisonOptions } = library;
+const comparisonTarget = ref<"A" | "B">("B");
+const catalogTarget = ref<"workspace" | "A" | "B">("workspace");
+const reportFont = ref("system-ui");
+const plotData = computed(() => currentData.value ? toTypeCData(currentData.value) : null);
+const reportType = ref<"indoor" | "roadway" | "floodlight">("indoor");
 const currentFileName = ref("Commercial_Downlight_40W.ies");
 const activeRibbonTab = ref<RibbonTab>("visualize");
 const activeView = ref<ViewportMode>("3d");
@@ -59,30 +78,39 @@ const showNewLuminaireModal = ref(false);
 const showCatalogModal = ref(false);
 const selectedPolarPlane = ref<"all" | "max" | "0" | "90">("all");
 const selectedPlotMode = ref<"polar" | "cartesian">("polar");
-const comparisonSecondaryData = ref<PhotometricData | null>(null);
 const uiScale = ref(1.0);
 const theme = ref<"dark" | "light">("dark");
 const fileInput = ref<HTMLInputElement>();
 const compareInput = ref<HTMLInputElement>();
-function chooseCompareFile(event: Event) {
+async function chooseCompareFile(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
+  const slot = comparisonTarget.value;
   if (!file) return;
-  void file.text().then(content => { try { comparisonSecondaryData.value = parseIES(content, file.name); } catch (error) { alert(`Could not open comparison file: ${error}`); } input.value = ""; });
+  try { library.select(slot, parsePhotometric(await readPhotometricText(file), file.name)); }
+  catch (error) { statusMessage.value = `Could not open comparison ${slot}: ${error instanceof Error ? error.message : error}`; }
+  finally { input.value = ""; }
 }
-function compareSample(sample: "downlight" | "roadway" | "floodlight") {
-  const samples = { downlight: [COMMERCIAL_DOWNLIGHT_IES, "Downlight.ies"], roadway: [ROADWAY_COBRA_HEAD_IES, "Roadway.ies"], floodlight: [FLOODLIGHT_NEMA_IES, "Floodlight.ies"] };
-  comparisonSecondaryData.value = parseIES(samples[sample][0], samples[sample][1]);
+function openComparison(slot: "A" | "B") {
+  comparisonTarget.value = slot;
+  compareInput.value?.click();
 }
-
+function openCatalog(target: "workspace" | "A" | "B" = "workspace") {
+  catalogTarget.value = target;
+  showCatalogModal.value = true;
+}
 function handleLuminaireLoad(loaded: PhotometricData) {
+  library.register(loaded);
   currentData.value = loaded;
   currentFileName.value = loaded.fileName;
   statusMessage.value = `Loaded ${loaded.fileName}.`;
 }
-
+function handleCatalogLoad(loaded: PhotometricData) {
+  if (catalogTarget.value === "workspace") handleLuminaireLoad(loaded);
+  else library.select(catalogTarget.value, loaded);
+}
 function handleCompareWith(other: PhotometricData) {
-  comparisonSecondaryData.value = other;
+  library.select(catalogTarget.value === "A" ? "A" : "B", other);
   selectRibbonTab("compare");
 }
 
@@ -126,15 +154,18 @@ function dismissMenus(event: MouseEvent) {
   });
 }
 function handleShortcuts(event: KeyboardEvent) {
+  if (event.defaultPrevented) return;
   const backdrop = document.querySelector<HTMLElement>(".modal-backdrop");
   if (event.key === "Tab" && backdrop) {
-    const focusable = Array.from(backdrop.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+    const overlay = document.querySelector<HTMLElement>('[data-dialog-overlay="true"]');
+    const scope = overlay ?? backdrop;
+    const focusable = Array.from(scope.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
       .filter(element => element.getClientRects().length > 0);
     if (focusable.length) {
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
-      if (event.shiftKey && (document.activeElement === first || !backdrop.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
-      else if (!event.shiftKey && (document.activeElement === last || !backdrop.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+      if (event.shiftKey && (document.activeElement === first || !scope.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !scope.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
     }
   }
   if (event.key === "Escape") {
@@ -194,12 +225,13 @@ function toggleTheme() {
 // Load IES content
 function loadFileContent(content: string, name: string) {
   try {
-    const parsed = parseIES(content, name);
+    const parsed = parsePhotometric(content, name);
+    library.register(parsed);
     currentData.value = parsed;
     currentFileName.value = name;
     statusMessage.value = `Loaded ${name}.`;
   } catch (err: any) {
-    alert("Error parsing IES file: " + (err?.message || err));
+    alert("Could not open photometric file: " + (err?.message || err));
   }
 }
 
@@ -209,7 +241,7 @@ async function openFile() {
     try {
       const selected = await open({
         multiple: false,
-        filters: [{ name: "IES Photometric Files", extensions: ["ies", "txt"] }],
+        filters: [{ name: "Photometric Files", extensions: ["ies", "ldt", "txt"] }],
       });
       if (selected && typeof selected === "string") {
         const content = await invoke<string>("read_photometric_file", { path: selected });
@@ -225,20 +257,13 @@ async function openFile() {
   }
 }
 
-function handleFileInput(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const file = target.files?.[0];
+async function handleFileInput(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  input.value = "";
   if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = (evt) => {
-    const content = evt.target?.result as string;
-    if (content) {
-      loadFileContent(content, file.name);
-    }
-  };
-  reader.readAsText(file);
-  target.value = "";
+  try { loadFileContent(await readPhotometricText(file), file.name); }
+  catch (error) { statusMessage.value = `Could not read ${file.name}: ${error instanceof Error ? error.message : error}`; }
 }
 
 // Save file
@@ -249,7 +274,7 @@ async function saveFile() {
   if (isTauri()) {
     try {
       const selected = await save({
-        defaultPath: currentFileName.value,
+        defaultPath: currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "") + ".ies",
         filters: [{ name: "IES Luminaire Files", extensions: ["ies"] }],
       });
       if (selected) {
@@ -267,7 +292,7 @@ async function saveFile() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = currentFileName.value.endsWith(".ies") ? currentFileName.value : `${currentFileName.value}.ies`;
+  a.download = currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "") + ".ies";
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -278,12 +303,14 @@ async function saveFile() {
 // Export EULUMDAT
 function exportLDT() {
   if (!currentData.value) return;
-  const content = serializeEULUMDAT(currentData.value);
+  let content: string;
+  try { content = serializeEULUMDAT(currentData.value); }
+  catch (error) { statusMessage.value = error instanceof Error ? error.message : String(error); return; }
   const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  const base = currentFileName.value.replace(/\.ies$/i, "");
+  const base = currentFileName.value.replace(/\.(ies|ldt|txt)$/i, "");
   a.download = `${base}.ldt`;
   document.body.appendChild(a);
   a.click();
@@ -322,13 +349,8 @@ function handleEditorSave(updated: PhotometricData) {
 
 // Load Samples
 function loadSample(type: "downlight" | "roadway" | "floodlight") {
-  if (type === "downlight") {
-    loadFileContent(COMMERCIAL_DOWNLIGHT_IES, "Commercial_Downlight_40W.ies");
-  } else if (type === "roadway") {
-    loadFileContent(ROADWAY_COBRA_HEAD_IES, "Cobra_Head_Roadway_150W.ies");
-  } else if (type === "floodlight") {
-    loadFileContent(FLOODLIGHT_NEMA_IES, "Architectural_Floodlight_250W.ies");
-  }
+  const index = { downlight:0, roadway:1, floodlight:2 }[type];
+  handleLuminaireLoad(library.catalog.value[index].data);
 }
 
 // Computed stats
@@ -388,12 +410,22 @@ const dimensionsInfo = computed(() => {
 });
 
 let dialogTrigger: HTMLElement | null = null;
+let dialogObserver: MutationObserver | undefined;
 watch([showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal], async (states, previous) => {
   if (states.some(Boolean) && !previous.some(Boolean)) {
     dialogTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await nextTick();
-    document.querySelector<HTMLElement>(".modal-backdrop button, .modal-backdrop input, .modal-backdrop select")?.focus();
+    const focusDialog = () => document.querySelector<HTMLElement>('.modal-backdrop button, .modal-backdrop [role="combobox"], .modal-backdrop input')?.focus();
+    if (document.querySelector('.modal-backdrop')) focusDialog();
+    else {
+      dialogObserver?.disconnect();
+      dialogObserver = new MutationObserver(() => {
+        if (document.querySelector('.modal-backdrop')) { focusDialog(); dialogObserver?.disconnect(); }
+      });
+      dialogObserver.observe(document.body, { childList: true, subtree: true });
+    }
   } else if (!states.some(Boolean) && previous.some(Boolean)) {
+    dialogObserver?.disconnect();
     await nextTick();
     const trigger = dialogTrigger?.isConnected && dialogTrigger.getClientRects().length
       ? dialogTrigger
@@ -421,6 +453,7 @@ onMounted(async () => {
   }
 });
 onBeforeUnmount(() => {
+  dialogObserver?.disconnect();
   window.removeEventListener("keydown", handleShortcuts);
   document.removeEventListener("click", dismissMenus);
 });
@@ -432,12 +465,12 @@ onBeforeUnmount(() => {
     <input
       ref="fileInput"
       type="file"
-      accept=".ies,.txt"
+      accept=".ies,.ldt,.txt"
       style="display: none"
       @change="handleFileInput"
     />
 
-    <input ref="compareInput" type="file" accept=".ies,.txt" hidden @change="chooseCompareFile" />
+    <input ref="compareInput" type="file" accept=".ies,.ldt,.txt" hidden @change="chooseCompareFile" />
 
     <!-- Header / Window Titlebar with Client-Side Decorations (CSD) -->
     <header class="window-titlebar" data-tauri-drag-region>
@@ -489,30 +522,48 @@ onBeforeUnmount(() => {
     </header>
 
     <nav class="ribbon-tabs" role="tablist" aria-label="Workspace" @keydown="navigateTabs">
-      <button v-for="tab in (['file', 'visualize', 'analysis', 'compare', 'reports'] as const)" :key="tab" role="tab" :aria-selected="activeRibbonTab === tab" :tabindex="activeRibbonTab === tab ? 0 : -1" :class="{ active: activeRibbonTab === tab }" @click="selectRibbonTab(tab)">{{ tab === 'analysis' ? 'Analyze' : tab.charAt(0).toUpperCase() + tab.slice(1) }}</button>
-      <details class="display-menu"><summary>Display</summary><div class="menu-content">
+      <button v-for="tab in (['file', 'visualize', 'analysis', 'compare', 'reports'] as const)" :key="tab" role="tab" :aria-selected="activeRibbonTab === tab" :tabindex="activeRibbonTab === tab ? 0 : -1" :class="{ active: activeRibbonTab === tab }" @click="selectRibbonTab(tab)"><AppIcon :name="({ file: 'folder', visualize: 'cube', analysis: 'calculator', compare: 'compare', reports: 'report' })[tab]" :size="15" /><span>{{ tab === 'analysis' ? 'Analyze' : tab.charAt(0).toUpperCase() + tab.slice(1) }}</span></button>
+      <details class="display-menu"><summary><AppIcon name="settings" :size="14" /> Display</summary><div class="menu-content">
         <label><input v-model="showInspector" type="checkbox"> Show Inspector</label>
         <button @click="toggleTheme">Theme: {{ theme === 'dark' ? 'Dark' : 'Light' }}</button>
-        <label>UI Scale <select :value="uiScale" @change="setScale(Number(($event.target as HTMLSelectElement).value))"><option :value="1">100%</option><option :value="1.1">110%</option><option :value="1.2">120%</option><option :value="1.3">130%</option><option :value="1.5">150%</option></select></label>
+        <label>UI Scale <ThemedSelect label="UI Scale" :model-value="uiScale" :options="[1,1.1,1.2,1.3,1.5].map(value => ({value, label: `${Math.round(value*100)}%`}))" @update:model-value="setScale" /></label>
         <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
       </div></details>
     </nav>
     <RibbonToolbar ref="ribbonToolbar">
       <div v-if="activeRibbonTab === 'file'" class="compact-commands">
-        <button @click="showNewLuminaireModal = true">New Luminaire</button><button @click="openFile">Open</button><button @click="saveFile">Save IES</button><button class="file-secondary" @click="showEditorModal = true">Edit Luminaire</button><button class="file-secondary" @click="exportLDT">Export LDT</button><button class="file-secondary" @click="showCatalogModal = true">Library</button>
-        <details class="file-more"><summary>More</summary><div class="menu-content"><button @click="showEditorModal = true">Edit Luminaire</button><button @click="exportLDT">Export LDT</button><button @click="showCatalogModal = true">Library</button></div></details>
+        <button @click="showNewLuminaireModal = true"><AppIcon name="plus" :size="15" />New Luminaire</button>
+        <button @click="openFile"><AppIcon name="open" :size="15" />Open</button>
+        <button @click="saveFile"><AppIcon name="save" :size="15" />Save IES</button>
+        <button class="file-secondary" @click="showEditorModal = true"><AppIcon name="edit" :size="15" />Edit Luminaire</button>
+        <button class="file-secondary" @click="exportLDT"><AppIcon name="convert" :size="15" />Export LDT</button>
+        <button class="file-secondary" @click="openCatalog()"><AppIcon name="database" :size="15" />Library</button>
+        <details class="file-more"><summary>More</summary><div class="menu-content"><button @click="showEditorModal = true">Edit Luminaire</button><button @click="exportLDT">Export LDT</button><button @click="openCatalog()">Library</button></div></details>
         <details><summary>Samples</summary><div class="menu-content"><button @click="loadSample('downlight')">Downlight</button><button @click="loadSample('roadway')">Roadway</button><button @click="loadSample('floodlight')">Floodlight</button></div></details>
       </div>
       <div v-else-if="activeRibbonTab === 'visualize'" class="compact-commands">
-        <label>View <select :value="visualizationView" @change="selectView(($event.target as HTMLSelectElement).value as typeof visualizationView)"><option value="3d">3D Candela Web</option><option value="polar">2D Candela Plot</option><option value="template">Iso-illuminance</option></select></label>
-        <template v-if="visualizationView === '3d'"><label>Rendering <select v-model="wireframeMode"><option :value="false">Solid</option><option :value="true">Wireframe</option></select></label><details><summary>Overlays</summary><div class="menu-content"><label><input v-model="show3DAxes" type="checkbox"> Axes</label><label><input v-model="show3DRings" type="checkbox"> Rings</label></div></details></template>
-        <template v-else-if="visualizationView === 'polar'"><label>Plot <select v-model="selectedPlotMode"><option value="polar">Polar</option><option value="cartesian">Cartesian</option></select></label><label>Plane <select v-model="selectedPolarPlane"><option value="all">All planes</option><option value="max">Max plane</option><option value="0">0° Transverse</option><option value="90">90° Longitudinal</option></select></label></template>
-        <label v-else>Illuminance Units <select v-model="illuminanceUnits"><option value="fc">Footcandles</option><option value="lux">Lux</option></select></label>
+        <label>View <ThemedSelect label="View" :model-value="visualizationView" :options="[{label:'3D Candela Web',value:'3d'},{label:'2D Candela Plot',value:'polar'},{label:'Iso-illuminance',value:'template'}]" @update:model-value="selectView" /></label>
+        <template v-if="visualizationView === '3d'">
+          <label>Rendering <ThemedSelect label="Rendering" v-model="wireframeMode" :options="[{label:'Solid',value:false},{label:'Wireframe',value:true}]" /></label>
+          <details><summary>Overlays</summary><div class="menu-content"><label><input v-model="show3DAxes" type="checkbox"> Axes</label><label><input v-model="show3DRings" type="checkbox"> Rings</label></div></details>
+        </template>
+        <template v-else-if="visualizationView === 'polar'">
+          <label>Plot <ThemedSelect label="Plot" v-model="selectedPlotMode" :options="[{label:'Polar',value:'polar'},{label:'Cartesian',value:'cartesian'}]" /></label>
+          <label>Plane <ThemedSelect label="Plane" v-model="selectedPolarPlane" :options="[{label:'All planes',value:'all'},{label:'Max plane',value:'max'},{label:'0° Transverse',value:'0'},{label:'90° Longitudinal',value:'90'}]" /></label>
+        </template>
+        <label v-else>Illuminance Units <ThemedSelect label="Illuminance Units" v-model="illuminanceUnits" :options="[{label:'Footcandles',value:'fc'},{label:'Lux',value:'lux'}]" /></label>
       </div>
       <div v-else-if="activeRibbonTab === 'analysis'" class="compact-commands">
-        <label>View <select :value="analysisView" @change="selectAnalysis(($event.target as HTMLSelectElement).value as typeof analysisView)"><option value="zonal">Zonal Lumens</option><option value="bug">BUG Rating</option><option value="cu">CU Table</option></select></label><button class="analysis-secondary" @click="showCIEModal = true">CIE Classification</button><button class="analysis-secondary" @click="copyData">Copy Photometric Summary</button><details class="analysis-more"><summary>More</summary><div class="menu-content"><button @click="showCIEModal = true">CIE Classification</button><button @click="copyData">Copy Photometric Summary</button></div></details><details><summary>Utilities</summary><div class="menu-content"><button @click="showConverterModal = true">Convert Type B/C</button></div></details>
+        <label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'}]" @update:model-value="selectAnalysis" /></label>
+        <button class="analysis-secondary" @click="showCIEModal = true"><AppIcon name="chart" :size="15" />CIE Classification</button>
+        <button class="analysis-secondary" @click="copyData"><AppIcon name="report" :size="15" />Copy Photometric Summary</button>
+        <details class="analysis-more"><summary>More</summary><div class="menu-content"><button @click="showCIEModal = true">CIE Classification</button><button @click="copyData">Copy Photometric Summary</button></div></details>
+        <details><summary>Utilities</summary><div class="menu-content"><button @click="showConverterModal = true">Convert Type B/C</button></div></details>
       </div>
-      <div v-else-if="activeRibbonTab === 'compare'" class="compact-commands"><span class="compare-filename" :title="currentFileName">A: {{ currentFileName }}</span><span class="compare-filename" :title="comparisonSecondaryData?.fileName || 'Roadway_150W.ies'">B: {{ comparisonSecondaryData?.fileName || 'Roadway_150W.ies' }}</span><details><summary>Choose Luminaire</summary><div class="menu-content"><button @click="compareInput?.click()">Open file</button><button @click="showCatalogModal = true">Library</button><button @click="compareSample('downlight')">Downlight sample</button><button @click="compareSample('roadway')">Roadway sample</button><button @click="compareSample('floodlight')">Floodlight sample</button></div></details></div>
+      <div v-else-if="activeRibbonTab === 'compare'" class="compact-commands compare-commands">
+        <div class="compare-slot"><span>A</span><ThemedSelect label="Luminaire A" v-model="selectionA" :options="comparisonOptions" filter /><button aria-label="Open luminaire A" title="Open luminaire A" @click="openComparison('A')"><AppIcon name="open" :size="15" /></button><button aria-label="Library for A" title="Library for A" @click="openCatalog('A')"><AppIcon name="database" :size="15" /></button></div>
+        <div class="compare-slot"><span>B</span><ThemedSelect label="Luminaire B" v-model="selectionB" :options="comparisonOptions" filter /><button aria-label="Open luminaire B" title="Open luminaire B" @click="openComparison('B')"><AppIcon name="open" :size="15" /></button><button aria-label="Library for B" title="Library for B" @click="openCatalog('B')"><AppIcon name="database" :size="15" /></button></div>
+      </div>
       <div v-else class="compact-commands"><span>Report options and export are beside the preview.</span></div>
     </RibbonToolbar>
 
@@ -625,7 +676,7 @@ onBeforeUnmount(() => {
           <!-- 2D Polar & Cartesian Curves View -->
           <Polar2DViewer
             v-else-if="activeView === 'polar'"
-            :data="currentData"
+            :data="plotData"
             :active-plane="selectedPolarPlane"
             :initial-plot-mode="selectedPlotMode"
           />
@@ -661,12 +712,14 @@ onBeforeUnmount(() => {
           <ReportViewer
             v-else-if="activeView === 'reports' && currentData"
             :data="currentData"
+            v-model:font-family="reportFont"
+            v-model:report-type="reportType"
           />
 
           <!-- Compare Luminaires View -->
           <LuminaireCompare
             v-else-if="activeView === 'compare'"
-            :primary-data="currentData"
+            :primary-data="comparisonPrimaryData"
             :secondary-data="comparisonSecondaryData"
           />
         </div>
@@ -718,7 +771,9 @@ onBeforeUnmount(() => {
     <!-- Photometric Library Search Catalog Modal -->
     <PhotometricLibraryCatalog
       v-if="showCatalogModal"
-      @load="handleLuminaireLoad"
+      :catalog="library.catalog.value"
+      @import="library.register($event)"
+      @load="handleCatalogLoad"
       @compare="handleCompareWith"
       @close="showCatalogModal = false"
     />
@@ -809,7 +864,7 @@ onBeforeUnmount(() => {
                 <AppIcon name="report" :size="18" />
                 <div>
                   <strong>Standard Formats & Reporting</strong>
-                  <span>IES LM-63 import and export, European EULUMDAT (.ldt) export, print-isolated PDF output, and standalone HTML photometric reports.</span>
+                  <span>IES LM-63 and European EULUMDAT (.ldt) import and export, print-isolated PDF output, and standalone HTML photometric reports.</span>
                 </div>
               </div>
             </div>

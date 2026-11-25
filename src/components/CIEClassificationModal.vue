@@ -287,7 +287,8 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 }
 
 .flux-code-pill {
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-size: 0.9rem;
   font-weight: 700;
   background: var(--accent, #d97706);

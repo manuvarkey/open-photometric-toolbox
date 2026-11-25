@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
+import { createCandelaSampler } from "../core/photometricSampling";
 import type { PhotometricData } from "../core/types";
 
 const props = withDefaults(
@@ -164,146 +165,23 @@ const cartXTicks = computed(() => {
 });
 
 // Generate paths for both Polar and Cartesian
+const sampler = computed(() => props.data ? createCandelaSampler(props.data) : null);
 const allCurves = computed(() => {
-  if (!props.data) return [];
-  const vAngles = props.data.verticalAngles;
-  const hAngles = props.data.horizontalAngles;
-  const candela = props.data.candela;
-  const mult = props.data.multiplier;
-
-  const result = [];
-
-  const findHIdx = (deg: number) => {
-    const idx = hAngles.indexOf(deg);
-    if (idx !== -1) return idx;
-    if (hAngles.length === 1) return 0;
-    let closestIdx = 0;
-    let minDiff = 360;
-    for (let i = 0; i < hAngles.length; i++) {
-      const diff = Math.abs(hAngles[i] - deg);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIdx = i;
-      }
-    }
-    return closestIdx;
-  };
-
-  // 1. Max Candela Plane
-  const maxH = props.data.calculated.maxCandela.horizontalAngle;
-  const maxHIdx = findHIdx(maxH);
-  const oppMaxH = (maxH + 180) % 360;
-  const hasOppMax = hAngles.includes(oppMaxH);
-  const oppMaxIdx = hasOppMax ? hAngles.indexOf(oppMaxH) : maxHIdx;
-
-  // Polar Path
-  let polarMax = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const pt = polarToCartesian(vAngles[i], (candela[maxHIdx]?.[i] ?? 0) * mult, 1);
-    polarMax += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  for (let i = vAngles.length - 1; i >= 0; i--) {
-    const cd = hasOppMax ? (candela[oppMaxIdx]?.[i] ?? 0) : (candela[maxHIdx]?.[i] ?? 0);
-    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
-    polarMax += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  polarMax += "Z";
-
-  // Cartesian Path
-  let cartMax = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const cd = (candela[maxHIdx]?.[i] ?? 0) * mult;
-    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
-    const y = padT + (1 - cd / maxVal.value) * plotH;
-    cartMax += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
-  }
-
-  result.push({
-    id: "max",
-    name: `Max Plane (${maxH}°)`,
-    polarPath: polarMax,
-    cartPath: cartMax,
-    color: "var(--graph-curve-max, #fbbf24)",
-    dash: "",
-    peakCd: Math.round(props.data.calculated.maxCandela.intensity),
-    hIndex: maxHIdx,
+  if (!props.data || !sampler.value) return [];
+  const sample = sampler.value;
+  const maximumPlane = props.data.calculated.maxCandela.horizontalAngle;
+  const angles = Array.from({length: maxVAngle.value / 2.5 + 1}, (_,i) => i*2.5);
+  return [
+    {id:'max', name:`Max Plane (${maximumPlane}°)`, cPlane:maximumPlane, color:'var(--graph-curve-max)', dash:''},
+    {id:'0', name:'0° Transverse', cPlane:0, color:'var(--graph-curve-0)', dash:'5,3'},
+    {id:'90', name:'90° Longitudinal', cPlane:90, color:'var(--graph-curve-90)', dash:'2,2'}
+  ].map(plane => {
+    const points = angles.map(angle => polarToCartesian(angle, sample(angle,plane.cPlane),1));
+    const opposite = [...angles].reverse().map(angle => polarToCartesian(angle,sample(angle,(plane.cPlane+180)%360),-1));
+    const polarPath = [...points,...opposite].map((p,i) => `${i?'L':'M'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')+' Z';
+    const cartPath = angles.map((angle,i) => `${i?'L':'M'} ${(padL+angle/maxVAngle.value*plotW).toFixed(2)} ${(padT+(1-sample(angle,plane.cPlane)/maxVal.value)*plotH).toFixed(2)}`).join(' ');
+    return {...plane,polarPath,cartPath,peakCd:Math.round(Math.max(...angles.map(angle=>sample(angle,plane.cPlane))))};
   });
-
-  // 2. 0° Plane (Transverse)
-  const idx0 = findHIdx(0);
-  const hasOpp0 = hAngles.includes(180);
-  const idx180 = hasOpp0 ? hAngles.indexOf(180) : idx0;
-
-  let polar0 = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const pt = polarToCartesian(vAngles[i], (candela[idx0]?.[i] ?? 0) * mult, 1);
-    polar0 += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  for (let i = vAngles.length - 1; i >= 0; i--) {
-    const cd = hasOpp0 ? (candela[idx180]?.[i] ?? 0) : (candela[idx0]?.[i] ?? 0);
-    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
-    polar0 += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  polar0 += "Z";
-
-  let cart0 = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const cd = (candela[idx0]?.[i] ?? 0) * mult;
-    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
-    const y = padT + (1 - cd / maxVal.value) * plotH;
-    cart0 += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
-  }
-
-  const peak0 = Math.round(Math.max(...(candela[idx0] || [0])) * mult);
-  result.push({
-    id: "0",
-    name: "0° Transverse",
-    polarPath: polar0,
-    cartPath: cart0,
-    color: "var(--graph-curve-0, #38bdf8)",
-    dash: "5,3",
-    peakCd: peak0,
-    hIndex: idx0,
-  });
-
-  // 3. 90° Plane (Longitudinal)
-  const idx90 = findHIdx(90);
-  const hasOpp90 = hAngles.includes(270);
-  const idx270 = hasOpp90 ? hAngles.indexOf(270) : idx90;
-
-  let polar90 = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const pt = polarToCartesian(vAngles[i], (candela[idx90]?.[i] ?? 0) * mult, 1);
-    polar90 += (i === 0 ? "M " : "L ") + `${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  for (let i = vAngles.length - 1; i >= 0; i--) {
-    const cd = hasOpp90 ? (candela[idx270]?.[i] ?? 0) : (candela[idx90]?.[i] ?? 0);
-    const pt = polarToCartesian(vAngles[i], cd * mult, -1);
-    polar90 += `L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)} `;
-  }
-  polar90 += "Z";
-
-  let cart90 = "";
-  for (let i = 0; i < vAngles.length; i++) {
-    const cd = (candela[idx90]?.[i] ?? 0) * mult;
-    const x = padL + (vAngles[i] / maxVAngle.value) * plotW;
-    const y = padT + (1 - cd / maxVal.value) * plotH;
-    cart90 += (i === 0 ? "M " : "L ") + `${x.toFixed(1)} ${y.toFixed(1)} `;
-  }
-
-  const peak90 = Math.round(Math.max(...(candela[idx90] || [0])) * mult);
-  result.push({
-    id: "90",
-    name: "90° Longitudinal",
-    polarPath: polar90,
-    cartPath: cart90,
-    color: "var(--graph-curve-90, #f472b6)",
-    dash: "2,2",
-    peakCd: peak90,
-    hIndex: idx90,
-  });
-
-  return result;
 });
 
 const visibleCurves = computed(() => {
@@ -329,30 +207,9 @@ function handleCartesianMouseMove(e: MouseEvent) {
   const fracX = (mouseX - padL) / plotW;
   const angle = Math.round(fracX * maxVAngle.value);
 
-  // Find nearest vertical angle in data
-  const vAngles = props.data.verticalAngles;
-  let nearestIdx = 0;
-  let minDiff = 360;
-  for (let i = 0; i < vAngles.length; i++) {
-    const diff = Math.abs(vAngles[i] - angle);
-    if (diff < minDiff) {
-      minDiff = diff;
-      nearestIdx = i;
-    }
-  }
-
   const activeCurve = visibleCurves.value[0] || allCurves.value[0];
-  const cd = Math.round((props.data.candela[activeCurve.hIndex]?.[nearestIdx] ?? 0) * props.data.multiplier);
-  const px = padL + (vAngles[nearestIdx] / maxVAngle.value) * plotW;
-  const py = padT + (1 - cd / maxVal.value) * plotH;
-
-  hoveredPoint.value = {
-    angle: vAngles[nearestIdx],
-    cd,
-    plane: activeCurve.name,
-    x: px,
-    y: py,
-  };
+  const cd = Math.round(sampler.value?.(angle, activeCurve.cPlane) ?? 0);
+  hoveredPoint.value = {angle, cd, plane:activeCurve.name, x:padL+angle/maxVAngle.value*plotW, y:padT+(1-cd/maxVal.value)*plotH};
 }
 
 function handleCartesianMouseLeave() {
@@ -772,7 +629,8 @@ function handleCartesianMouseLeave() {
   min-width: 44px;
   padding: 0 6px;
   font-size: 0.75rem;
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-weight: 600;
   color: var(--text);
 }
@@ -850,7 +708,8 @@ function handleCartesianMouseLeave() {
 .axis-tick-label {
   font-size: 10px;
   fill: var(--muted);
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-weight: 500;
 }
 
@@ -871,7 +730,8 @@ function handleCartesianMouseLeave() {
   font-size: 11px;
   font-weight: 700;
   fill: var(--text);
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 .tooltip-text-secondary {
@@ -917,7 +777,8 @@ function handleCartesianMouseLeave() {
 }
 
 .legend-val {
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
   font-size: 0.75rem;
   color: var(--muted);
 }

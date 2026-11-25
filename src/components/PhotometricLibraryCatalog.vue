@@ -2,40 +2,18 @@
 import { computed, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import type { PhotometricData } from "../core/types";
-import { parseIES } from "../core/iesParser";
-import {
-  COMMERCIAL_DOWNLIGHT_IES,
-  FLOODLIGHT_NEMA_IES,
-  ROADWAY_COBRA_HEAD_IES,
-} from "../core/samples";
-
+import { parsePhotometric } from "../core/photometricParser";
+import { readPhotometricText } from "../services/photometricFiles";
+import ThemedSelect from "./ThemedSelect.vue";
+import { polarPath } from "../utils/plotPaths";
+import type { CatalogItem } from "../composables/useLuminaireCatalog";
+const props = defineProps<{ catalog: readonly CatalogItem[] }>();
 const emit = defineEmits<{
   (e: "close"): void;
   (e: "load", data: PhotometricData): void;
   (e: "compare", data: PhotometricData): void;
+  (e: "import", data: PhotometricData): void;
 }>();
-
-interface CatalogItem {
-  id: string;
-  category: "indoor" | "roadway" | "floodlight" | "industrial";
-  data: PhotometricData;
-}
-
-// Built-in initial catalog items
-const downlightData = parseIES(COMMERCIAL_DOWNLIGHT_IES);
-downlightData.fileName = "Commercial_Downlight_40W.ies";
-
-const roadwayData = parseIES(ROADWAY_COBRA_HEAD_IES);
-roadwayData.fileName = "Cobra_Head_Roadway_150W.ies";
-
-const floodlightData = parseIES(FLOODLIGHT_NEMA_IES);
-floodlightData.fileName = "Architectural_Floodlight_250W.ies";
-
-const catalog = ref<CatalogItem[]>([
-  { id: "1", category: "indoor", data: downlightData },
-  { id: "2", category: "roadway", data: roadwayData },
-  { id: "3", category: "floodlight", data: floodlightData },
-]);
 
 const searchQuery = ref("");
 const selectedCategory = ref<"all" | "indoor" | "roadway" | "floodlight" | "industrial">("all");
@@ -44,7 +22,7 @@ const fileInput = ref<HTMLInputElement>();
 
 // Filtered and sorted catalog items
 const filteredCatalog = computed(() => {
-  return catalog.value
+  return props.catalog
     .filter((item) => {
       // Category filter
       if (selectedCategory.value !== "all" && item.category !== selectedCategory.value) {
@@ -79,72 +57,17 @@ const filteredCatalog = computed(() => {
     });
 });
 
-// Import multiple IES files into the catalog
-function handleImportFiles(e: Event) {
-  const target = e.target as HTMLInputElement;
-  const files = target.files;
-  if (!files) return;
-
-  for (let i = 0; i < files.length; i++) {
-    const file = files[i];
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      const text = evt.target?.result as string;
-      if (text) {
-        try {
-          const parsed = parseIES(text);
-          parsed.fileName = file.name;
-          let category: CatalogItem["category"] = "indoor";
-          if (parsed.photometricType === 2) category = "floodlight";
-          else if (parsed.calculated.roadwayClassification.iesType !== "Type V") category = "roadway";
-          catalog.value.push({
-            id: `imported-${Date.now()}-${i}`,
-            category,
-            data: parsed,
-          });
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
-          window.alert(`Could not import ${file.name}: ${reason}`);
-        }
-      }
-    };
-    reader.readAsText(file);
+// Imports are stored by the shell, so closing this dialog does not discard them.
+async function handleImportFiles(e: Event) {
+  const input = e.target as HTMLInputElement;
+  const files = Array.from(input.files ?? []);
+  input.value = "";
+  for (const file of files) {
+    try { emit("import", parsePhotometric(await readPhotometricText(file), file.name)); }
+    catch (error) { window.alert(`Could not import ${file.name}: ${error instanceof Error ? error.message : error}`); }
   }
 }
-
-// Generate thumbnail polar path for an item
-function getThumbnailPath(d: PhotometricData): string {
-  const vAngles = d.verticalAngles;
-  const candela = d.candela;
-  const maxI = Math.max(1, d.calculated.maxCandela.intensity);
-  const cx = 36;
-  const cy = 36;
-  const rMax = 30;
-
-  const pts: string[] = [];
-  for (let i = 0; i < vAngles.length; i++) {
-    const deg = vAngles[i];
-    const cd = (candela[0]?.[i] ?? 0) * d.multiplier;
-    const r = (cd / maxI) * rMax;
-    const rad = (deg * Math.PI) / 180 + Math.PI / 2;
-    const x = cx + r * Math.cos(rad);
-    const y = cy + r * Math.sin(rad);
-    pts.push(`${x.toFixed(1)} ${y.toFixed(1)}`);
-  }
-
-  const oppPts: string[] = [];
-  for (let i = vAngles.length - 1; i >= 0; i--) {
-    const deg = vAngles[i];
-    const cd = (candela[0]?.[i] ?? 0) * d.multiplier;
-    const r = (cd / maxI) * rMax;
-    const rad = (-deg * Math.PI) / 180 + Math.PI / 2;
-    const x = cx + r * Math.cos(rad);
-    const y = cy + r * Math.sin(rad);
-    oppPts.push(`${x.toFixed(1)} ${y.toFixed(1)}`);
-  }
-
-  return `M ${pts.join(" L ")} L ${oppPts.join(" L ")} Z`;
-}
+function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36, 30); }
 </script>
 
 <template>
@@ -160,13 +83,13 @@ function getThumbnailPath(d: PhotometricData): string {
         <div class="header-actions">
           <button class="button secondary" @click="fileInput?.click()">
             <AppIcon name="open" :size="14" />
-            <span>Import IES Files</span>
+            <span>Import IES / LDT Files</span>
           </button>
           <input
             ref="fileInput"
             type="file"
             multiple
-            accept=".ies,.txt"
+            accept=".ies,.ldt,.txt"
             style="display: none"
             @change="handleImportFiles"
           />
@@ -224,12 +147,7 @@ function getThumbnailPath(d: PhotometricData): string {
 
           <div class="sort-wrap">
             <label for="catalog-field-1">Sort:</label>
-            <select id="catalog-field-1" v-model="sortBy" class="sort-select">
-              <option value="name">Name / File</option>
-              <option value="lumens">Lumens (High to Low)</option>
-              <option value="efficacy">Efficacy (LER)</option>
-              <option value="watts">Power (Watts)</option>
-            </select>
+            <ThemedSelect label="Sort library" v-model="sortBy" :options="[{label:'Name / File',value:'name'},{label:'Lumens (High to Low)',value:'lumens'},{label:'Efficacy (LER)',value:'efficacy'},{label:'Power (Watts)',value:'watts'}]" />
           </div>
         </div>
       </div>

@@ -67,6 +67,8 @@ const icon = computed(() => icons[props.name] ?? icons.blank);
     stroke-linecap="round"
     stroke-linejoin="round"
     class="app-icon"
+    aria-hidden="true"
+    focusable="false"
   >
     <path :d="icon[0]" />
     <path v-if="icon[1]" :d="icon[1]" stroke="var(--icon-accent, #d97706)" />

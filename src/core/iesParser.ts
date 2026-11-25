@@ -37,52 +37,59 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
       foundTilt = true;
       const tiltType = rawLine.substring(5).trim().toUpperCase();
       if (tiltType !== "NONE") {
-        // Skip tilt data rows if present
-        // Format specifies: <lamp-to-luminaire geometry>, <num pairs>, angles..., factors...
-        // Usually 4 lines follow when TILT != NONE
-        lineIdx += 4;
+        throw new Error("IES lamp tilt tables are not supported. Export a TILT=NONE file with the required correction applied.");
       }
       break;
     }
   }
 
   if (!foundTilt) {
-    throw new Error("Missing IES TILT record. LDT import is not currently supported.");
+    throw new Error("Missing IES TILT record.");
   }
 
   // 2. Tokenize all remaining numbers across arbitrary whitespace/newlines
   const remainingText = lines.slice(lineIdx).join(" ");
-  const tokens = remainingText.trim().split(/\s+/).filter((t) => t.length > 0);
+  const tokens = remainingText.trim().split(/[\s,]+/).filter((t) => t.length > 0);
   let tokIdx = 0;
 
   function nextFloat(): number {
-    if (tokIdx >= tokens.length) return 0;
-    const val = parseFloat(tokens[tokIdx]);
+    if (tokIdx >= tokens.length) throw new Error("Incomplete IES numeric data.");
+    const val = Number(tokens[tokIdx]);
     tokIdx++;
-    return isNaN(val) ? 0 : val;
+    if (!Number.isFinite(val)) throw new Error("IES numeric data contains a nonfinite or invalid value.");
+    return val;
   }
 
   function nextInt(): number {
-    return Math.round(nextFloat());
+    const value = nextFloat();
+    if (!Number.isInteger(value)) throw new Error("IES counts and type indicators must be integers.");
+    return value;
   }
 
   const lampCount = nextInt();
   const lumensPerLamp = nextFloat();
-  const multiplier = nextFloat() || 1.0;
+  const multiplier = nextFloat();
   const numVerticalAngles = nextInt();
   const numHorizontalAngles = nextInt();
   const photometricTypeRaw = nextInt();
-  const photometricType = (photometricTypeRaw === 2 ? 2 : photometricTypeRaw === 3 ? 3 : 1) as 1 | 2 | 3;
-  const unitsType = (nextInt() === 2 ? 2 : 1) as 1 | 2;
+  if (![1, 2, 3].includes(photometricTypeRaw)) throw new Error("Invalid IES photometric type.");
+  const photometricType = photometricTypeRaw as 1 | 2 | 3;
+  const unitsRaw = nextInt();
+  if (unitsRaw !== 1 && unitsRaw !== 2) throw new Error("Invalid IES length units.");
+  const unitsType = unitsRaw as 1 | 2;
   const luminousWidth = nextFloat();
   const luminousLength = nextFloat();
   const luminousHeight = nextFloat();
 
-  const ballastFactor = nextFloat() || 1.0;
+  const ballastFactor = nextFloat();
   nextFloat(); // ballast-lamp factor / future use
   const inputWatts = nextFloat();
 
-  if (numVerticalAngles < 1 || numHorizontalAngles < 1 || tokens.length - tokIdx < numVerticalAngles + numHorizontalAngles + numVerticalAngles * numHorizontalAngles) {
+  if (lampCount < 1 || multiplier < 0 || ballastFactor < 0 || inputWatts < 0 || (lumensPerLamp < 0 && lumensPerLamp !== -1)) {
+    throw new Error("Invalid IES lamp, power, or multiplier data.");
+  }
+  if (numVerticalAngles < 1 || numHorizontalAngles < 1 || numVerticalAngles > 10000 || numHorizontalAngles > 10000 ||
+      numVerticalAngles * numHorizontalAngles > 1000000 || tokens.length - tokIdx < numVerticalAngles + numHorizontalAngles + numVerticalAngles * numHorizontalAngles) {
     throw new Error("Incomplete or invalid IES angle and candela data.");
   }
 
@@ -120,7 +127,8 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
     luminousLength,
     luminousWidth,
     luminousHeight,
-    unitsType
+    unitsType,
+    photometricType
   );
 
   return {

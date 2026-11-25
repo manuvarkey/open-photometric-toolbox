@@ -1,0 +1,38 @@
+{
+  "commit": "5d18755",
+  "environment": "Chromium headless, software WebGL, 1400x900 / 100%",
+  "timingScope": "600x600 heatmap createImageData through putImageData entry; 90,000 photometric samples per redraw",
+  "sampleInitialMs": [
+    497.30000000074506
+  ],
+  "mountingHeightChangeMs": [
+    457.2999999988824
+  ],
+  "dense181x73Ms": [
+    2720.2000000011176
+  ],
+  "font": {
+    "body": "system-ui",
+    ".ribbon-tabs > button": "Arial",
+    ".template-toolbar input": "monospace",
+    ".template-toolbar label": "system-ui"
+  },
+  "productionBundle": {
+    "javascript": {
+      "file": "index-HZEcYPCx.js",
+      "bytes": 835162,
+      "gzipBytes": 219268
+    },
+    "css": {
+      "file": "index-DLZqUDGj.css",
+      "bytes": 57483,
+      "gzipBytes": 9583
+    },
+    "dependencyProbes": {
+      "method": "Independent esbuild minified ESM builds; overlapping dependencies included; not additive",
+      "primevueConfigAndAuraKiB": 158,
+      "primevueSelectKiB": 199,
+      "representativeThreeImportsKiB": 463
+    }
+  }
+}

@@ -1,272 +1,69 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import type { PhotometricData } from "../core/types";
-
-const props = defineProps<{
-  data: PhotometricData | null;
-  units: "fc" | "lux";
-}>();
-
-const mountingHeight = defineModel<number>("mountingHeight", { required: true }); // in meters or feet
-const units = computed(() => props.units);
-const canvasRef = ref<HTMLCanvasElement>();
-const hoveredPoint = ref<{ x: number; y: number; val: number } | null>(null);
-
-// Max ground illuminance
-const maxGroundIlluminance = computed(() => {
-  if (!props.data) return 0;
-  const mh = Math.max(0.01, mountingHeight.value);
-  const nadirCandela = (props.data.candela[0]?.[0] ?? 0) * props.data.multiplier;
-  return Math.round((nadirCandela / (mh * mh)) * 100) / 100;
-});
-
-function getCandela(vDeg: number, hDeg: number): number {
-  if (!props.data) return 0;
-  const { verticalAngles, horizontalAngles, candela, multiplier } = props.data;
-  let normH = ((hDeg % 360) + 360) % 360;
-  const maxH = horizontalAngles[horizontalAngles.length - 1] || 0;
-  if (maxH === 90) {
-    if (normH > 180) normH = 360 - normH;
-    if (normH > 90) normH = 180 - normH;
-  } else if (maxH === 180 && normH > 180) normH = 360 - normH;
-
-  let vIdx = Math.max(0, verticalAngles.length - 1);
-  if (vDeg <= verticalAngles[0]) vIdx = 0;
-  for (let i = 0; i < verticalAngles.length - 1; i++) {
-    if (verticalAngles[i] <= vDeg && verticalAngles[i + 1] >= vDeg) { vIdx = i; break; }
-  }
-  let hIdx = 0;
-  let minHDist = Infinity;
-  for (let i = 0; i < horizontalAngles.length; i++) {
-    const dist = Math.abs(horizontalAngles[i] - normH);
-    if (dist < minHDist) { minHDist = dist; hIdx = i; }
-  }
-  return (candela[hIdx]?.[vIdx] ?? 0) * multiplier;
+import { illuminanceField } from "../composables/illuminanceCache";
+const props = defineProps<{ data: PhotometricData | null; units: "fc" | "lux" }>();
+const mountingHeight = defineModel<number>("mountingHeight", { required: true });
+const field = computed(() => props.data ? illuminanceField(props.data) : null);
+const height = computed(() => Math.max(.01, Number(mountingHeight.value) || .01));
+const maximum = computed(() => (field.value?.maximum ?? 0) / height.value ** 2);
+const hoveredPoint = ref<{x:number;y:number;val:number} | null>(null);
+const colors = ['#283e83','#285ca0','#167fbd','#149eac','#259b79','#83b736','#e8cb36','#ef9430','#dc4c3a'];
+let frame = 0;
+let pending: {x:number;y:number} | null = null;
+function handlePointer(event: PointerEvent) {
+  const svg = event.currentTarget as SVGSVGElement;
+  const matrix = svg.getScreenCTM();
+  if (!matrix) return;
+  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  pending = { x: (point.x - 300) / (600 / 9), y: (300 - point.y) / (600 / 9) };
+  if (frame) return;
+  frame = requestAnimationFrame(() => {
+    frame = 0;
+    if (pending && field.value) hoveredPoint.value = { ...pending, val: field.value.at(pending.x, pending.y) / height.value ** 2 };
+  });
 }
-
-function illuminanceAt(dxMH: number, dyMH: number, mh: number): number {
-  const thetaRad = Math.atan(Math.hypot(dxMH, dyMH));
-  const thetaDeg = thetaRad * 180 / Math.PI;
-  if (thetaDeg >= 89) return 0;
-  const psiDeg = (Math.atan2(dxMH, dyMH) * 180 / Math.PI + 360) % 360;
-  return getCandela(thetaDeg, psiDeg) * Math.pow(Math.cos(thetaRad), 3) / (mh * mh);
-}
-
-function drawTemplate() {
-  const canvas = canvasRef.value;
-  if (!canvas || !props.data) return;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  ctx.clearRect(0, 0, w, h);
-
-  const cx = w / 2;
-  const cy = h / 2;
-  const mh = Math.max(0.01, mountingHeight.value);
-  const mhPx = w / 9; // 1 MH is w/9 pixels (grid spans -4 to +4 MH)
-
-  // Draw heatmap pixels
-  const imgData = ctx.createImageData(w, h);
-  const data = imgData.data;
-  const maxE = Math.max(0.1, maxGroundIlluminance.value);
-
-  const step = 2; // draw at 2px resolution for smoothness
-  for (let py = 0; py < h; py += step) {
-    for (let px = 0; px < w; px += step) {
-      const dxMH = (px - cx) / mhPx;
-      const dyMH = (cy - py) / mhPx; // inverted Y
-      const E = illuminanceAt(dxMH, dyMH, mh);
-
-      const ratio = Math.min(1.0, E / maxE);
-      // Heatmap gradient: dark purple -> blue -> cyan -> green -> yellow -> red
-      let r = 0, g = 0, b = 0, a = 0;
-      if (ratio > 0.005) {
-        a = Math.min(230, Math.floor(ratio * 300) + 20);
-        if (ratio < 0.25) {
-          const t = ratio / 0.25;
-          r = Math.floor(20 * (1 - t) + 0 * t);
-          g = Math.floor(30 * (1 - t) + 160 * t);
-          b = Math.floor(100 * (1 - t) + 220 * t);
-        } else if (ratio < 0.5) {
-          const t = (ratio - 0.25) / 0.25;
-          r = 0;
-          g = Math.floor(160 * (1 - t) + 220 * t);
-          b = Math.floor(220 * (1 - t) + 80 * t);
-        } else if (ratio < 0.75) {
-          const t = (ratio - 0.5) / 0.25;
-          r = Math.floor(220 * t);
-          g = Math.floor(220 * (1 - t) + 200 * t);
-          b = 40;
-        } else {
-          const t = (ratio - 0.75) / 0.25;
-          r = 255;
-          g = Math.floor(200 * (1 - t));
-          b = 40;
-        }
-      }
-
-      for (let sy = 0; sy < step; sy++) {
-        for (let sx = 0; sx < step; sx++) {
-          const idx = ((py + sy) * w + (px + sx)) * 4;
-          if (idx < data.length) {
-            data[idx] = r;
-            data[idx + 1] = g;
-            data[idx + 2] = b;
-            data[idx + 3] = a;
-          }
-        }
-      }
-    }
-  }
-
-  ctx.putImageData(imgData, 0, 0);
-
-  // Draw MH Grid Lines
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.15)";
-  ctx.lineWidth = 1;
-  ctx.setLineDash([4, 4]);
-
-  for (let m = -4; m <= 4; m++) {
-    const x = cx + m * mhPx;
-    const y = cy + m * mhPx;
-
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, h);
-    ctx.stroke();
-
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(w, y);
-    ctx.stroke();
-  }
-
-  // Draw concentric circles for 1MH, 2MH, 3MH, 4MH
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.22)";
-  for (let m = 1; m <= 4; m++) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, m * mhPx, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-
-  ctx.setLineDash([]);
-
-  // Draw Axes
-  ctx.strokeStyle = "rgba(217, 119, 6, 0.75)";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.moveTo(0, cy);
-  ctx.lineTo(w, cy);
-  ctx.moveTo(cx, 0);
-  ctx.lineTo(cx, h);
-  ctx.stroke();
-
-  // Draw Grid Labels
-  ctx.fillStyle = "#a1a1aa";
-  ctx.font = "11px monospace";
-  ctx.textAlign = "center";
-  for (let m = -4; m <= 4; m++) {
-    if (m === 0) continue;
-    const x = cx + m * mhPx;
-    ctx.fillText(`${m}MH`, x, cy + 14);
-    const y = cy - m * mhPx;
-    ctx.fillText(`${m}MH`, cx + 18, y + 4);
-  }
-
-  // Nadir marker
-  ctx.fillStyle = "#ef4444";
-  ctx.beginPath();
-  ctx.arc(cx, cy, 4, 0, Math.PI * 2);
-  ctx.fill();
-}
-
-function handleMouseMove(e: MouseEvent) {
-  const canvas = canvasRef.value;
-  if (!canvas || !props.data) return;
-  const rect = canvas.getBoundingClientRect();
-  const px = (e.clientX - rect.left) * canvas.width / rect.width;
-  const py = (e.clientY - rect.top) * canvas.height / rect.height;
-
-  const w = canvas.width;
-  const h = canvas.height;
-  const cx = w / 2;
-  const cy = h / 2;
-  const mh = Math.max(0.01, mountingHeight.value);
-  const mhPx = w / 9;
-
-  const dxMH = (px - cx) / mhPx;
-  const dyMH = (cy - py) / mhPx;
-  const E = illuminanceAt(dxMH, dyMH, mh);
-
-  hoveredPoint.value = {
-    x: Math.round(dxMH * 10) / 10,
-    y: Math.round(dyMH * 10) / 10,
-    val: Math.round(E * 100) / 100,
-  };
-}
-
-onMounted(() => {
-  drawTemplate();
+function leave() { pending = null; hoveredPoint.value = null; cancelAnimationFrame(frame); frame = 0; }
+watch(() => props.units, (next, previous) => {
+  if (next !== previous) mountingHeight.value = mountingHeight.value * (next === 'lux' ? .3048 : 1 / .3048);
+  leave();
 });
-
-watch(units, (next, previous) => {
-  if (next === previous) return;
-  mountingHeight.value = Number((mountingHeight.value * (next === "lux" ? 0.3048 : 1 / 0.3048)).toFixed(4));
-  hoveredPoint.value = null;
-});
-
-watch([() => props.data, mountingHeight, units], () => {
-  drawTemplate();
-});
+watch(() => props.data, leave);
+onBeforeUnmount(leave);
 </script>
 
 <template>
   <div class="template-viewer-container">
     <div class="template-toolbar">
-      <div class="control-group">
-        <label for="iso-field-1">Mounting Height (MH):</label>
-        <input id="iso-field-1"
-          v-model.number="mountingHeight"
-          type="number"
-          min="0.01"
-          max="1000"
-          step="0.1"
-          class="mh-input"
-        />
+      <div class="control-group"><label for="iso-field-1">Mounting Height (MH):</label>
+        <input id="iso-field-1" v-model.number="mountingHeight" type="number" min="0.01" max="1000" step="0.1" class="mh-input" />
         <span class="unit-tag">{{ units === 'fc' ? 'ft' : 'm' }}</span>
       </div>
-
-      <div class="stat-badge">
-        <span>Nadir Max: <strong>{{ maxGroundIlluminance }} {{ units }}</strong></span>
-      </div>
-
-      <div v-if="hoveredPoint" class="stat-badge cursor-badge">
-        <span>Cursor: <strong>X: {{ hoveredPoint.x }}MH, Y: {{ hoveredPoint.y }}MH ({{ hoveredPoint.val }} {{ units }})</strong></span>
-      </div>
+      <div class="stat-badge">Peak: <strong>{{ maximum.toFixed(2) }} {{ units }}</strong></div>
+      <div v-if="hoveredPoint" class="stat-badge cursor-badge">Cursor: <strong>{{ hoveredPoint.x.toFixed(1) }}MH, {{ hoveredPoint.y.toFixed(1) }}MH · {{ hoveredPoint.val.toFixed(2) }} {{ units }}</strong></div>
     </div>
-
     <div class="canvas-wrap">
-      <canvas
-        ref="canvasRef"
-        width="600"
-        height="600"
-        class="template-canvas"
-        @mousemove="handleMouseMove"
-        @mouseleave="hoveredPoint = null"
-      />
-
+      <svg viewBox="0 0 600 600" class="template-svg" role="img" aria-label="Vector iso-illuminance contours in mounting-height coordinates" @pointermove="handlePointer" @pointerleave="leave">
+        <defs><clipPath id="illuminance-clip"><rect width="600" height="600" /></clipPath></defs>
+        <rect width="600" height="600" fill="var(--graph-bg)" />
+        <g clip-path="url(#illuminance-clip)">
+          <path v-for="(band,index) in field?.bands ?? []" :key="band.value" :d="band.path" :fill="colors[index]" fill-rule="evenodd" stroke="var(--graph-grid)" stroke-width="0.5" vector-effect="non-scaling-stroke"><title>{{ (band.value / height ** 2).toFixed(3) }} {{ units }}</title></path>
+          <g v-for="m in 9" :key="m" stroke="var(--graph-grid)" stroke-width=".6" stroke-dasharray="3 5" fill="none">
+            <line :x1="300+(m-5)*600/9" y1="0" :x2="300+(m-5)*600/9" y2="600" />
+            <line x1="0" :y1="300+(m-5)*600/9" x2="600" :y2="300+(m-5)*600/9" />
+          </g>
+          <circle v-for="m in 4" :key="m" cx="300" cy="300" :r="m*600/9" fill="none" stroke="var(--graph-grid)" stroke-width=".6" />
+        </g>
+        <path d="M0 300H600M300 0V600" stroke="var(--accent)" stroke-width="1" />
+        <g v-for="m in [-4,-3,-2,-1,1,2,3,4]" :key="m" fill="var(--text)" font-size="17">
+          <text :x="300+m*600/9" y="316" text-anchor="middle">{{ m }}MH</text>
+          <text x="306" :y="300-m*600/9-5">{{ m }}MH</text>
+        </g>
+        <circle cx="300" cy="300" r="3" fill="var(--accent)" />
+      </svg>
       <div class="legend-card">
-        <div class="legend-title">Illuminance ({{ units }})</div>
-        <div class="legend-gradient" />
-        <div class="legend-labels">
-          <span>0</span>
-          <span>{{ (maxGroundIlluminance * 0.25).toFixed(1) }}</span>
-          <span>{{ (maxGroundIlluminance * 0.5).toFixed(1) }}</span>
-          <span>{{ (maxGroundIlluminance * 0.75).toFixed(1) }}</span>
-          <span>{{ maxGroundIlluminance.toFixed(1) }}</span>
-        </div>
+        <div class="legend-title">Illuminance ({{ units }})</div><div class="legend-gradient" />
+        <div class="legend-labels"><span v-for="fraction in [0,.25,.5,.75,1]" :key="fraction">{{ (maximum*fraction).toFixed(1) }}</span></div>
       </div>
     </div>
   </div>
@@ -309,7 +106,8 @@ watch([() => props.data, mountingHeight, units], () => {
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
   color: var(--text);
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 .unit-tag {
@@ -366,13 +164,13 @@ watch([() => props.data, mountingHeight, units], () => {
   align-items: center;
   justify-content: center;
   position: relative;
-  background: #141419;
+  background: var(--graph-bg);
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
   overflow: hidden;
 }
 
-.template-canvas {
+.template-svg {
   width: min(100cqw, 100cqh, 600px);
   height: auto;
   aspect-ratio: 1;
@@ -411,6 +209,7 @@ watch([() => props.data, mountingHeight, units], () => {
   justify-content: space-between;
   font-size: 0.68rem;
   color: var(--hint);
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 </style>

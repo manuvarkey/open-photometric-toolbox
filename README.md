@@ -8,7 +8,7 @@
 
 **Open Photometric Toolbox** is a modern, open-source, cross-platform engineering suite for luminaire photometric analysis, visualization, calculation, conversion, and reporting. 
 
-Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides native desktop performance, mathematical precision conforming to international lighting standards, and a sleek responsive ribbon interface with high-contrast theming.
+Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides a native desktop interface, tested photometric calculations, and a responsive ribbon with dark and light themes.
 
 ---
 
@@ -20,6 +20,7 @@ Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides native desk
 - **Precision 2D Distribution Graphs**:
   - High-precision SVG Polar curves (Max candela plane, $0^\circ$ transverse, $90^\circ$ longitudinal).
   - Linear Cartesian X-Y Candela distribution plots with interactive tracking crosshairs and coordinate tooltips.
+  - Cached SVG iso-illuminance contours; mounting height and units reuse field geometry.
   - Interactive mouse wheel zoom ($0.4\times$ to $5.0\times$) and drag-to-pan capabilities.
 - **Zonal Lumens & TM-15 BUG Ratings**:
   - Simpson's $1/3$ numerical quadrature for zonal flux distribution across 18 spherical zones ($0^\circ - 180^\circ$).
@@ -34,12 +35,14 @@ Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides native desk
   - Synthesize standardized IES LM-63 files from scratch with 6 interactive distribution presets: Recessed Downlight, Batwing Linear Suspended, Industrial UFO High Bay, NEMA Floodlight, Direct/Indirect Architectural Pendant, and Asymmetric Wall Wash.
 - **Multi-File Catalog & Side-by-Side Comparison**:
   - Batch open, search, and filter photometric files with polar thumbnail previews.
-  - Side-by-side luminaire comparison overlaying candela curves and computing differential efficiency and lumen metrics.
+  - Independent A and B selectors for current documents, catalog entries, and files, with overlaid vector curves and comparison metrics.
 - **Standard Format Interoperability**:
-  - Full bidirectional support for **IES LM-63** (1986, 1991, 1995, 2002) and European **EULUMDAT** (`.ldt`) file standards.
+  - **IES LM-63** (1986, 1991, 1995, 2002) and European **EULUMDAT** (`.ldt`) import, including Windows-1252 manufacturer files.
+  - IES export and LDT re-export preserve supported geometry and metadata. LDT export requires ten supplied LITG direct ratios; exporting IES-only data to LDT is unavailable until ratio generation has independent validation. Type A analysis and non-NONE IES tilt data are explicitly unsupported.
 - **Automated Photometric Reports**:
   - Standalone HTML report export with embedded CSS and vector diagrams.
   - Isolated print-to-PDF generation free of application UI elements.
+  - Searchable installed font-family selection in the desktop app, applied to paper, PDF, and HTML. HTML recipients need the selected local font; fonts are not embedded in HTML. Browser builds offer explicit font discovery when Local Font Access is available.
 - **Native Desktop Integration**:
   - Client-Side Decorations (CSD) with compositor shadows, window dragging, and instant dark/light high-contrast theme switching.
 
@@ -94,3 +97,9 @@ For detailed developer conventions and agent instructions, refer to [AGENTS.md](
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Verification
+
+Run `npm test`, `npm run build`, and `cargo check --manifest-path src-tauri/Cargo.toml`. Browser checks use `npm run test:ui`; install its browser with `npx playwright install chromium`, or set `PHOTOMETRIC_CHROMIUM` to an installed Chromium executable. After a production build, `node tests/production-loading.mjs` verifies feature loading and recovery. Artifacts default to `/tmp/photometric-ui-checks`, configurable with `PHOTOMETRIC_ARTIFACTS`.
+
+See the [implementation and acceptance plan](docs/feature_implementation_plan.md) and [verification record](docs/feature_verification.md) for measured results and current limits.

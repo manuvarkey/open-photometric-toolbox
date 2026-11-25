@@ -17,6 +17,9 @@ html, body, #app {
   background: var(--bg);
 }
 
+button, input, select, textarea, summary { font-family: inherit; }
+input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { font-variant-numeric: tabular-nums; }
+
 /* Header & Title bar */
 .window-titlebar {
   display: flex;
@@ -95,6 +98,9 @@ html, body, #app {
 }
 
 .ribbon-tabs > button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   height: 100%;
   padding: 0 16px;
   border: 0;
@@ -326,9 +332,11 @@ html, body, #app {
 }
 
 .data-kv .v {
+  text-align: right;
   color: var(--text);
   font-weight: 600;
 }
+.data-card .data-kv:nth-child(-n + 4) .v { white-space: nowrap; }
 .inspector-cie {
   width: 100%;
   background: transparent;
@@ -618,9 +626,19 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 .ribbon { container-type: inline-size; }
 .compact-commands { width: 100%; flex-wrap: nowrap; }
+.compact-commands > label { min-width: 0; }
+.compact-commands button { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.display-menu > summary { display: flex; align-items: center; gap: 5px; }
+.compare-commands { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+.compare-slot { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.compare-slot > .app-select { flex: 1; min-width: 0; }
+.compare-slot > span { font-weight: 700; color: var(--accent); }
+.compare-slot > button { padding: 6px; flex-shrink: 0; }
 .file-more, .analysis-more { display: none; }
 .compare-filename { min-width: 0; max-width: 25%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @container (max-width: 800px) {
   .file-secondary, .analysis-secondary { display: none !important; }
   .file-more, .analysis-more { display: block; }
 }
+
+.tool-load-state { margin: auto; padding: 24px; color: var(--text); text-align: center; }

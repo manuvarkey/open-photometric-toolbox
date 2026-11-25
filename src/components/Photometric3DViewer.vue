@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import * as THREE from "three";
+import { createCandelaSampler } from "../core/photometricSampling";
 import type { PhotometricData } from "../core/types";
 
 const props = withDefaults(
@@ -116,55 +117,10 @@ function rebuildMesh() {
   }
 
   const data = props.data;
-  const vAngles = data.verticalAngles;
-  let hAngles = data.horizontalAngles;
-  let candela = data.candela;
-
-  // Symmetrize horizontal angles to complete full 360 degree revolution if needed
-  if (hAngles.length === 1) {
-    // Axially symmetric (e.g. downlight): replicate across 36 slices
-    const fullH: number[] = [];
-    const fullCandela: number[][] = [];
-    for (let i = 0; i <= 36; i++) {
-      fullH.push((i * 360) / 36);
-      fullCandela.push(candela[0]);
-    }
-    hAngles = fullH;
-    candela = fullCandela;
-  } else if (hAngles[hAngles.length - 1] === 90) {
-    // Quadrant symmetric: replicate 0-90 to 90-180, 180-270, 270-360
-    const fullH: number[] = [];
-    const fullCandela: number[][] = [];
-    const count = hAngles.length;
-    for (let i = 0; i < count; i++) {
-      fullH.push(hAngles[i]);
-      fullCandela.push(candela[i]);
-    }
-    for (let i = count - 2; i >= 0; i--) {
-      fullH.push(180 - hAngles[i]);
-      fullCandela.push(candela[i]);
-    }
-    for (let i = 1; i < count; i++) {
-      fullH.push(180 + hAngles[i]);
-      fullCandela.push(candela[i]);
-    }
-    for (let i = count - 2; i >= 0; i--) {
-      fullH.push(360 - hAngles[i]);
-      fullCandela.push(candela[i]);
-    }
-    hAngles = fullH;
-    candela = fullCandela;
-  } else if (hAngles[hAngles.length - 1] === 180) {
-    // Bilateral symmetric: replicate 0-180 across 180-360
-    const fullH = [...hAngles];
-    const fullCandela = [...candela];
-    for (let i = hAngles.length - 2; i >= 0; i--) {
-      fullH.push(360 - hAngles[i]);
-      fullCandela.push(candela[i]);
-    }
-    hAngles = fullH;
-    candela = fullCandela;
-  }
+  const sample = createCandelaSampler(data);
+  const vAngles = Array.from({length:73}, (_,i) => i*2.5);
+  const hAngles = Array.from({length:73}, (_,i) => i*5);
+  const candela = hAngles.map(h => vAngles.map(v => sample(v,h)));
 
   const maxVal = Math.max(1, data.calculated.maxCandela.intensity);
   const scale = 5.0; // Visual radius units
@@ -181,7 +137,7 @@ function rebuildMesh() {
     const phi = (hAngles[h] * Math.PI) / 180;
     for (let v = 0; v < numV; v++) {
       const theta = (vAngles[v] * Math.PI) / 180;
-      const intensity = candela[h][v] * data.multiplier;
+      const intensity = candela[h][v];
       const norm = intensity / maxVal;
       const r = norm * scale;
 
@@ -371,6 +327,12 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrameId);
   resizeObserver?.disconnect();
   window.removeEventListener("mouseup", stopDragging);
+  scene?.traverse(object => {
+    const mesh = object as THREE.Mesh;
+    mesh.geometry?.dispose();
+    const materials = mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : [];
+    materials.forEach(material => material.dispose());
+  });
   renderer?.dispose();
 });
 </script>
@@ -469,6 +431,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   justify-content: space-between;
   height: 70px;
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 </style>

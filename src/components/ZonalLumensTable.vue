@@ -113,7 +113,8 @@ defineProps<{
 
 .num {
   text-align: right;
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 
 .zone-range {

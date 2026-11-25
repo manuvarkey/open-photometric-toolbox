@@ -3,6 +3,9 @@ export interface PhotometricData {
   fileFormat: "IES" | "LDT";
   headerVersion: string;
   keywords: Record<string, string>;
+  // Source-format fields that have no equivalent in LM-63. Intensities in
+  // candela remain normalized to physical cd; this metadata is not a multiplier.
+  eulumdat?: EulumdatMetadata;
   
   // Standard parameters
   lampCount: number;
@@ -27,6 +30,36 @@ export interface PhotometricData {
   
   // Calculated properties
   calculated: PhotometricCalculations;
+}
+
+export interface EulumdatLampSet {
+  /** Negative counts identify absolute photometry in EULUMDAT. */
+  lampCount: number;
+  lampType: string;
+  totalFlux: number;
+  colorTemperature: string;
+  colorRendering: string;
+  watts: number;
+}
+
+export interface EulumdatMetadata {
+  typeIndicator: 1 | 2 | 3;
+  symmetry: 0 | 1 | 2 | 3 | 4;
+  bodyDimensionsMm: [number, number, number];
+  luminousArea: {
+    lengthMm: number;
+    widthMm: number;
+    heightsMm: [number, number, number, number];
+  };
+  downwardFluxFraction: number;
+  lightOutputRatio: number;
+  conversionFactor: number;
+  measurementTilt: number;
+  lampSets: EulumdatLampSet[];
+  /** Measured LITG room-index values, not the IES CU approximation. */
+  directRatios: number[];
+  originalFileName: string;
+  dateUser: string;
 }
 
 export interface ZonalLumenZone {

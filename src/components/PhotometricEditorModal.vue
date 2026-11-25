@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import AppIcon from "./AppIcon.vue";
+import ThemedSelect from "./ThemedSelect.vue";
 import { computePhotometrics } from "../core/calculations";
 import type { PhotometricData } from "../core/types";
 
@@ -60,7 +61,8 @@ function handleApply() {
     luminousLength.value,
     luminousWidth.value,
     luminousHeight.value,
-    unitsType.value
+    unitsType.value,
+    props.data.photometricType
   );
 
   const updatedData: PhotometricData = {
@@ -170,10 +172,7 @@ function handleApply() {
             </div>
             <div class="field">
               <label for="editor-field-14">Units</label>
-              <select id="editor-field-14" v-model.number="unitsType" class="select-input">
-                <option :value="1">Feet (ft)</option>
-                <option :value="2">Meters (m)</option>
-              </select>
+              <ThemedSelect label="Units" v-model="unitsType" :options="[{label:'Feet',value:1},{label:'Metres',value:2}]" />
             </div>
             <div class="field span-2">
               <label for="editor-field-15">Candela Array Scale Factor</label>

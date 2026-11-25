@@ -1,0 +1,58 @@
+Open Photometric Toolbox test laboratory
+3
+2
+4
+90
+3
+90
+SYNTHETIC-NOT-FOR-DESIGN
+Independent symmetry 2 fixture
+SYM-2
+symmetry-2.ldt
+2026-11-25 Synthetic test
+400
+250
+80
+200
+100
+10
+20
+30
+40
+100
+90
+1
+0
+1
+1
+Test LED
+1000
+4000 K
+Ra 90
+20
+0.1
+0.2
+0.3
+0.4
+0.5
+0.6
+0.7
+0.8
+0.9
+1.0
+0
+90
+180
+270
+0
+90
+180
+100
+10
+0
+100
+20
+0
+100
+30
+0

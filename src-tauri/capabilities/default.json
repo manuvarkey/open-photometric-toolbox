@@ -6,6 +6,7 @@
     "main"
   ],
   "permissions": [
+    "allow-list-system-font-families",
     "core:default",
     "dialog:allow-open",
     "dialog:allow-save",

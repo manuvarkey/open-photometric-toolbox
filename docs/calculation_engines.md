@@ -95,10 +95,10 @@ $$CU = \underbrace{\frac{2.5 \cdot \rho_w \cdot C_1 C_3 (1 - DR) \cdot \%Dn}{RCR
 | :--- | :--- | :--- |
 | `CalcUGR()` | **CIE 117-1995** | Calculates the Unified Glare Rating: $$UGR = 8 \log_{10} \left( \frac{0.25}{L_b} \sum \frac{L^2 \omega}{p^2} \right)$$ where $L$ is luminance, $L_b$ background luminance, $\omega$ solid angle, and $p$ Guth position index. |
 | `CalcUGRTable()` | CIE Standard Glare Tables | Populates the standard $4H \times 8H$ tabular UGR report for crosswise and endwise observer viewpoints. |
-| `Convert_BC()`, `Convert_CB()` | Goniophotometer Photometric Web | Converts candela matrices between Type B (floodlights) and Type C (architectural/roadway) angular coordinate frames. |
-| `TotalDnLumens()`, `TotalUpLumens()` | Downward / Upward Flux | Separates lower and upper hemisphere total luminous flux. |
 
 ---
+
+Conversion and type-specific flux integration are in **LAICalcNET**, not LAIGlareNet. The later [core-only investigation](core_module_findings.md) corrects these historical attributions. The current TypeScript engine uses a shared physical-direction sampler: Type C solid angle is `sin(γ) dγ dC`, and Type B native solid angle is `cos(H) dH dV`. Its bounded Simpson quadrature is an independent implementation, not a recovered legacy Simpson algorithm. Type A directional analysis is explicitly unsupported.
 
 ## 3. `laicontournet1.dll` (Contour Plotting Engine)
 

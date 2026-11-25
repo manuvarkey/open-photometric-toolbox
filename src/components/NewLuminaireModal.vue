@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
+import ThemedSelect from "./ThemedSelect.vue";
 import type { PhotometricData } from "../core/types";
 import { computePhotometrics } from "../core/calculations";
+import { convertPhotometric } from "../core/goniometerConversion";
 
 const emit = defineEmits<{
   (e: "close"): void;
@@ -109,7 +111,7 @@ const generatedProfile = computed(() => {
         // Batwing: peak at 30 deg in 90 deg plane, cosine in 0 deg plane
         const peakAngleRad = (32 * Math.PI) / 180;
         const hFactor = Math.sin((hDeg * Math.PI) / 180);
-        const shift = Math.exp(-Math.pow((vRad - peakAngleRad) / 0.3, 2)) * 1.35 * hFactor;
+        const shift = Math.exp(-Math.pow((vRad - peakAngleRad) / 0.3, 2)) * 1.35 * hFactor * Math.sin(vRad);
         const base = Math.pow(Math.cos(vRad), 1.2);
         return Math.round(estI0 * 0.8 * (base + shift));
       } else if (selectedPreset.value === "indirect") {
@@ -125,7 +127,7 @@ const generatedProfile = computed(() => {
         if (vDeg > 90) return 0;
         // Asymmetric lobe tilted toward 0 deg plane
         const hRad = (hDeg * Math.PI) / 180;
-        const tiltEffect = Math.cos(hRad) * 0.45;
+        const tiltEffect = Math.cos(hRad) * 0.45 * Math.sin(vRad);
         const lobeCenter = (25 * Math.PI) / 180;
         const lobe = Math.exp(-Math.pow((vRad - lobeCenter) / 0.4, 2));
         return Math.round(estI0 * (Math.pow(Math.cos(vRad), 1.5) + lobe * (0.6 + tiltEffect)));
@@ -172,7 +174,9 @@ const previewPath = computed(() => {
 
 function handleCreate() {
   const { vAngles, hAngles, candela } = generatedProfile.value;
-  const photometricType = selectedPreset.value === "floodlight" ? 2 : 1;
+  // The synthesis model below is expressed in C/gamma directions. A flood
+  // preset is resampled into a genuine signed B grid after synthesis.
+  const photometricType = 1;
 
   const calculated = computePhotometrics(
     vAngles,
@@ -185,7 +189,8 @@ function handleCreate() {
     length.value,
     width.value,
     height.value,
-    unitsType.value
+    unitsType.value,
+    photometricType
   );
 
   const newFile: PhotometricData = {
@@ -218,7 +223,7 @@ function handleCreate() {
     calculated,
   };
 
-  emit("created", newFile);
+  emit("created", selectedPreset.value === "floodlight" ? convertPhotometric(newFile, 2) : newFile);
   emit("close");
 }
 </script>
@@ -316,10 +321,7 @@ function handleCreate() {
               </div>
               <div class="field-item">
                 <label for="new-field-4">Units</label>
-                <select id="new-field-4" v-model="unitsType" class="text-input">
-                  <option :value="2">Meters (SI)</option>
-                  <option :value="1">Feet (Imperial)</option>
-                </select>
+                <ThemedSelect label="Units" v-model="unitsType" :options="[{label:'Feet',value:1},{label:'Metres',value:2}]" />
               </div>
             </div>
 

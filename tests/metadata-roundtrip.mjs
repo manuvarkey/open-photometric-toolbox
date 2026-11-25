@@ -5,8 +5,9 @@ const { outputFiles } = await build({
   stdin: {
     contents: String.raw`
       import assert from "node:assert/strict";
+      import { readFileSync } from "node:fs";
       import { parseIES, serializeIES } from "./src/core/iesParser";
-      import { serializeEULUMDAT } from "./src/core/eulumdatConverter";
+      import { parseEULUMDAT, serializeEULUMDAT } from "./src/core/eulumdatConverter";
       import { COMMERCIAL_DOWNLIGHT_IES } from "./src/core/samples";
       const original = parseIES(COMMERCIAL_DOWNLIGHT_IES, "fixture.ies");
       assert.equal(original.keywords.LUMCAT, "DL-100-LED-40W");
@@ -20,7 +21,9 @@ const { outputFiles } = await build({
       assert.deepEqual(reopened.horizontalAngles, original.horizontalAngles);
       assert.deepEqual(reopened.candela, original.candela);
       assert.equal(reopened.calculated.totalLuminaireLumens, original.calculated.totalLuminaireLumens);
-      const ldt = serializeEULUMDAT(edited).split(/\r?\n/);
+      assert.throws(() => serializeEULUMDAT(edited), /direct ratios/);
+      const reference = parseEULUMDAT(readFileSync("tests/fixtures/ldt/symmetry-1.ldt", "utf8"));
+      const ldt = serializeEULUMDAT({...edited,eulumdat:reference.eulumdat}).split(/\r?\n/);
       assert.equal(ldt[0], "Lighting Analysts Sample");
       assert.equal(ldt[9], "EDITED-CATALOG");
       assert.throws(() => parseIES(ldt.join("\n")), /Missing IES TILT/);

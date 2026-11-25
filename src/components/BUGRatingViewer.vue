@@ -176,6 +176,7 @@ defineProps<{
 
 .kv b {
   color: var(--text, #edebe8);
-  font-family: monospace;
+  font-family: var(--ui-font-family);
+  font-variant-numeric: tabular-nums;
 }
 </style>

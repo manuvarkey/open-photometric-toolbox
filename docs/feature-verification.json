@@ -1,0 +1,246 @@
+{
+  "date": "2026-11-26",
+  "baseCommit": "5d18755",
+  "chunks": [
+    {
+      "file": "BUGRatingViewer-D8RzUZHO.css",
+      "bytes": 2205,
+      "gzipBytes": 728
+    },
+    {
+      "file": "BUGRatingViewer-DbPiBC77.js",
+      "bytes": 2658,
+      "gzipBytes": 897
+    },
+    {
+      "file": "CIEClassificationModal-B1ecoGMy.css",
+      "bytes": 4298,
+      "gzipBytes": 1158
+    },
+    {
+      "file": "CIEClassificationModal-BiWcIGnO.js",
+      "bytes": 4786,
+      "gzipBytes": 1725
+    },
+    {
+      "file": "CUTableViewer-99WXfucH.css",
+      "bytes": 2261,
+      "gzipBytes": 716
+    },
+    {
+      "file": "CUTableViewer-DmmdRlnK.js",
+      "bytes": 2456,
+      "gzipBytes": 1181
+    },
+    {
+      "file": "GoniometerConverterModal-BbgsduqG.js",
+      "bytes": 4955,
+      "gzipBytes": 2077
+    },
+    {
+      "file": "GoniometerConverterModal-DRjJDcCm.css",
+      "bytes": 3823,
+      "gzipBytes": 1003
+    },
+    {
+      "file": "IsoIlluminanceViewer-DNGjo52k.css",
+      "bytes": 2517,
+      "gzipBytes": 808
+    },
+    {
+      "file": "IsoIlluminanceViewer-_Qh1QQSS.js",
+      "bytes": 10414,
+      "gzipBytes": 4658
+    },
+    {
+      "file": "LuminaireCompare-DVUNVOcC.css",
+      "bytes": 2838,
+      "gzipBytes": 868
+    },
+    {
+      "file": "LuminaireCompare-FVp23M2W.js",
+      "bytes": 4511,
+      "gzipBytes": 1718
+    },
+    {
+      "file": "NewLuminaireModal-C5L6FSxf.css",
+      "bytes": 4137,
+      "gzipBytes": 1119
+    },
+    {
+      "file": "NewLuminaireModal-D4JxwX4t.js",
+      "bytes": 10595,
+      "gzipBytes": 3642
+    },
+    {
+      "file": "Photometric3DViewer-dDNOQ3tg.css",
+      "bytes": 1436,
+      "gzipBytes": 639
+    },
+    {
+      "file": "Photometric3DViewer-ehZ-8ogp.js",
+      "bytes": 474433,
+      "gzipBytes": 120546
+    },
+    {
+      "file": "PhotometricEditorModal-BuTu-WB7.css",
+      "bytes": 2309,
+      "gzipBytes": 757
+    },
+    {
+      "file": "PhotometricEditorModal-DhANrIwB.js",
+      "bytes": 6316,
+      "gzipBytes": 1987
+    },
+    {
+      "file": "PhotometricLibraryCatalog-BpyIqR0T.css",
+      "bytes": 5583,
+      "gzipBytes": 1273
+    },
+    {
+      "file": "PhotometricLibraryCatalog-YG8kQ4YN.js",
+      "bytes": 6351,
+      "gzipBytes": 2555
+    },
+    {
+      "file": "Polar2DViewer-DgVgfla7.js",
+      "bytes": 8700,
+      "gzipBytes": 3440
+    },
+    {
+      "file": "Polar2DViewer-ZG9efLsc.css",
+      "bytes": 4652,
+      "gzipBytes": 1169
+    },
+    {
+      "file": "ReportViewer-DeViDmda.css",
+      "bytes": 4742,
+      "gzipBytes": 1331
+    },
+    {
+      "file": "ReportViewer-xEBJlH3k.js",
+      "bytes": 23054,
+      "gzipBytes": 6758
+    },
+    {
+      "file": "ZonalLumensTable-BY2FgDEN.css",
+      "bytes": 1682,
+      "gzipBytes": 617
+    },
+    {
+      "file": "ZonalLumensTable-ZFggvpnD.js",
+      "bytes": 1139,
+      "gzipBytes": 593
+    },
+    {
+      "file": "index-0_iORKRV.css",
+      "bytes": 18945,
+      "gzipBytes": 4420
+    },
+    {
+      "file": "index-7kaIUAys.js",
+      "bytes": 336411,
+      "gzipBytes": 104194
+    },
+    {
+      "file": "plotPaths-C3A8DrOP.js",
+      "bytes": 352,
+      "gzipBytes": 285
+    }
+  ],
+  "ui": {
+    "matrix": [
+      "1400x900-dark-100",
+      "1400x900-dark-130",
+      "1400x900-light-100",
+      "1400x900-light-130",
+      "900x600-dark-100",
+      "900x600-dark-130",
+      "900x600-light-100",
+      "900x600-light-130"
+    ],
+    "checks": [
+      "Native format dispatch and LDT re-export metadata",
+      "Independent A/B LDT inputs and curves",
+      "Library targets A without changing editing document",
+      "Height and unit changes reuse vector geometry",
+      "Report font reaches all three HTML/PDF outputs without changing UI fonts",
+      "Report settings persist across view changes",
+      "Preset creation including genuine Type B floodlight",
+      "Browser font permission denial preserves default"
+    ],
+    "errors": []
+  },
+  "performance": {
+    "environment": "Chromium headless / software WebGL / 1400x900",
+    "scope": "Normalized 121x121 field plus SVG contour path generation",
+    "measurements": {
+      "sample": {
+        "coldMs": 9.099999997764826,
+        "warmMedianMs": 4,
+        "worstMs": 9.099999997764826
+      },
+      "dense": {
+        "coldMs": 6.700000002980232,
+        "warmMedianMs": 5.400000002235174,
+        "worstMs": 6.700000002980232
+      }
+    },
+    "baseline": "docs/core-performance-baseline.json",
+    "note": "Dense benchmark uses the same 181x73 dimensions with physically consistent pole intensities; the earlier synthetic baseline had inconsistent pole values."
+  },
+  "manufacturer": [
+    {
+      "file": 0,
+      "sha256": "c33831d0dd786646ec0d9452f259a7f468071e1dd4ae8fcbae9ce6a5d94a1a8e",
+      "manufacturer": "LEDiL Oy",
+      "luminaire": "ILYAD F TW 42° 2700K",
+      "grid": [
+        361,
+        73
+      ],
+      "lumens": 2466,
+      "reopenedLumens": 2466,
+      "maxRoundtripCandelaError": 0
+    },
+    {
+      "file": 1,
+      "sha256": "21d947cd2994afe84d1b45b00469b03c495a22d696b0c2c4a5f346efefeaada3",
+      "manufacturer": "LEDiL Oy",
+      "luminaire": "ILYAD F TW 61° 2700K",
+      "grid": [
+        361,
+        73
+      ],
+      "lumens": 2473,
+      "reopenedLumens": 2473,
+      "maxRoundtripCandelaError": 0
+    }
+  ],
+  "productionLoading": {
+    "startup": [
+      "/assets/index-7kaIUAys.js",
+      "/assets/Photometric3DViewer-ehZ-8ogp.js"
+    ],
+    "afterIso": [
+      "/assets/index-7kaIUAys.js",
+      "/assets/Photometric3DViewer-ehZ-8ogp.js",
+      "/assets/IsoIlluminanceViewer-_Qh1QQSS.js"
+    ],
+    "afterReport": [
+      "/assets/index-7kaIUAys.js",
+      "/assets/Photometric3DViewer-ehZ-8ogp.js",
+      "/assets/IsoIlluminanceViewer-_Qh1QQSS.js",
+      "/assets/plotPaths-C3A8DrOP.js",
+      "/assets/ReportViewer-xEBJlH3k.js"
+    ],
+    "bytes": {
+      "/assets/index-7kaIUAys.js": 336411,
+      "/assets/Photometric3DViewer-ehZ-8ogp.js": 474433,
+      "/assets/IsoIlluminanceViewer-_Qh1QQSS.js": 10414,
+      "/assets/plotPaths-C3A8DrOP.js": 352,
+      "/assets/ReportViewer-xEBJlH3k.js": 23054
+    },
+    "failedChunkFeedback": true
+  }
+}

@@ -34,6 +34,8 @@ TILT=NONE
 3200 3100 2950 2750 2500 2200 1850 1500 1150 820 540 310 150 60 20 8 3 1 0
 `;
 
+// This measured-shaped grid uses C planes around nadir, not signed Type B H/V.
+// Retain its intensities and identify its actual coordinate chart correctly.
 export const FLOODLIGHT_NEMA_IES = `IESNA:LM-63-2002
 [MANUFAC] Lighting Analysts Sample
 [LUMCAT] FL-250-WIDE
@@ -43,7 +45,7 @@ export const FLOODLIGHT_NEMA_IES = `IESNA:LM-63-2002
 [TESTLAB] Optical Testing Lab
 [DATE] 2024-09-10
 TILT=NONE
-1 31000 1 19 3 2 2 0.350 0.350 0.150
+1 31000 1 19 3 1 2 0.350 0.350 0.150
 1.0 1.0 252.0
 0 5 10 15 20 25 30 35 40 45 50 55 60 65 70 75 80 85 90
 0 45 90
