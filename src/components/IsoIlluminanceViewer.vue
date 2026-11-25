@@ -4,27 +4,53 @@ import type { PhotometricData } from "../core/types";
 
 const props = defineProps<{
   data: PhotometricData | null;
+  units: "fc" | "lux";
 }>();
 
-const mountingHeight = ref(8); // in meters or feet
-const units = ref<"fc" | "lux">("fc");
+const mountingHeight = defineModel<number>("mountingHeight", { required: true }); // in meters or feet
+const units = computed(() => props.units);
 const canvasRef = ref<HTMLCanvasElement>();
 const hoveredPoint = ref<{ x: number; y: number; val: number } | null>(null);
-
-// Iso-illuminance threshold levels
-const levels = computed(() => {
-  return units.value === "fc"
-    ? [5.0, 2.0, 1.0, 0.5, 0.2, 0.1, 0.05]
-    : [50.0, 20.0, 10.0, 5.0, 2.0, 1.0, 0.5];
-});
 
 // Max ground illuminance
 const maxGroundIlluminance = computed(() => {
   if (!props.data) return 0;
-  const mh = Math.max(1, mountingHeight.value);
+  const mh = Math.max(0.01, mountingHeight.value);
   const nadirCandela = (props.data.candela[0]?.[0] ?? 0) * props.data.multiplier;
   return Math.round((nadirCandela / (mh * mh)) * 100) / 100;
 });
+
+function getCandela(vDeg: number, hDeg: number): number {
+  if (!props.data) return 0;
+  const { verticalAngles, horizontalAngles, candela, multiplier } = props.data;
+  let normH = ((hDeg % 360) + 360) % 360;
+  const maxH = horizontalAngles[horizontalAngles.length - 1] || 0;
+  if (maxH === 90) {
+    if (normH > 180) normH = 360 - normH;
+    if (normH > 90) normH = 180 - normH;
+  } else if (maxH === 180 && normH > 180) normH = 360 - normH;
+
+  let vIdx = Math.max(0, verticalAngles.length - 1);
+  if (vDeg <= verticalAngles[0]) vIdx = 0;
+  for (let i = 0; i < verticalAngles.length - 1; i++) {
+    if (verticalAngles[i] <= vDeg && verticalAngles[i + 1] >= vDeg) { vIdx = i; break; }
+  }
+  let hIdx = 0;
+  let minHDist = Infinity;
+  for (let i = 0; i < horizontalAngles.length; i++) {
+    const dist = Math.abs(horizontalAngles[i] - normH);
+    if (dist < minHDist) { minHDist = dist; hIdx = i; }
+  }
+  return (candela[hIdx]?.[vIdx] ?? 0) * multiplier;
+}
+
+function illuminanceAt(dxMH: number, dyMH: number, mh: number): number {
+  const thetaRad = Math.atan(Math.hypot(dxMH, dyMH));
+  const thetaDeg = thetaRad * 180 / Math.PI;
+  if (thetaDeg >= 89) return 0;
+  const psiDeg = (Math.atan2(dxMH, dyMH) * 180 / Math.PI + 360) % 360;
+  return getCandela(thetaDeg, psiDeg) * Math.pow(Math.cos(thetaRad), 3) / (mh * mh);
+}
 
 function drawTemplate() {
   const canvas = canvasRef.value;
@@ -38,48 +64,8 @@ function drawTemplate() {
 
   const cx = w / 2;
   const cy = h / 2;
-  const mh = Math.max(1, mountingHeight.value);
+  const mh = Math.max(0.01, mountingHeight.value);
   const mhPx = w / 9; // 1 MH is w/9 pixels (grid spans -4 to +4 MH)
-
-  const numV = props.data.verticalAngles.length;
-  const numH = props.data.horizontalAngles.length;
-  const mult = props.data.multiplier;
-
-  function getCandela(vDeg: number, hDeg: number): number {
-    if (!props.data) return 0;
-    // Normalize hDeg to 0..360
-    let normH = ((hDeg % 360) + 360) % 360;
-    // Map symmetry if necessary
-    const maxH = props.data.horizontalAngles[numH - 1] || 0;
-    if (maxH === 90) {
-      if (normH > 180) normH = 360 - normH;
-      if (normH > 90) normH = 180 - normH;
-    } else if (maxH === 180) {
-      if (normH > 180) normH = 360 - normH;
-    }
-
-    // Nearest or linear interpolation in V
-    let vIdx = 0;
-    for (let i = 0; i < numV - 1; i++) {
-      if (props.data.verticalAngles[i] <= vDeg && props.data.verticalAngles[i + 1] >= vDeg) {
-        vIdx = i;
-        break;
-      }
-    }
-
-    // Nearest in H
-    let hIdx = 0;
-    let minHDist = 999;
-    for (let i = 0; i < numH; i++) {
-      const dist = Math.abs(props.data.horizontalAngles[i] - normH);
-      if (dist < minHDist) {
-        minHDist = dist;
-        hIdx = i;
-      }
-    }
-
-    return (props.data.candela[hIdx]?.[vIdx] ?? 0) * mult;
-  }
 
   // Draw heatmap pixels
   const imgData = ctx.createImageData(w, h);
@@ -91,18 +77,7 @@ function drawTemplate() {
     for (let px = 0; px < w; px += step) {
       const dxMH = (px - cx) / mhPx;
       const dyMH = (cy - py) / mhPx; // inverted Y
-      const distMH = Math.sqrt(dxMH * dxMH + dyMH * dyMH);
-      const thetaRad = Math.atan(distMH);
-      const thetaDeg = (thetaRad * 180) / Math.PI;
-
-      if (thetaDeg >= 89) continue;
-
-      let psiDeg = (Math.atan2(dxMH, dyMH) * 180) / Math.PI;
-      if (psiDeg < 0) psiDeg += 360;
-
-      const I = getCandela(thetaDeg, psiDeg);
-      const cosTheta = Math.cos(thetaRad);
-      const E = (I * Math.pow(cosTheta, 3)) / (mh * mh);
+      const E = illuminanceAt(dxMH, dyMH, mh);
 
       const ratio = Math.min(1.0, E / maxE);
       // Heatmap gradient: dark purple -> blue -> cyan -> green -> yellow -> red
@@ -211,28 +186,19 @@ function handleMouseMove(e: MouseEvent) {
   const canvas = canvasRef.value;
   if (!canvas || !props.data) return;
   const rect = canvas.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  const py = e.clientY - rect.top;
+  const px = (e.clientX - rect.left) * canvas.width / rect.width;
+  const py = (e.clientY - rect.top) * canvas.height / rect.height;
 
   const w = canvas.width;
   const h = canvas.height;
   const cx = w / 2;
   const cy = h / 2;
-  const mh = Math.max(1, mountingHeight.value);
+  const mh = Math.max(0.01, mountingHeight.value);
   const mhPx = w / 9;
 
   const dxMH = (px - cx) / mhPx;
   const dyMH = (cy - py) / mhPx;
-  const distMH = Math.sqrt(dxMH * dxMH + dyMH * dyMH);
-  const thetaRad = Math.atan(distMH);
-  const thetaDeg = (thetaRad * 180) / Math.PI;
-
-  let psiDeg = (Math.atan2(dxMH, dyMH) * 180) / Math.PI;
-  if (psiDeg < 0) psiDeg += 360;
-
-  const cosTheta = Math.cos(thetaRad);
-  const I = props.data.calculated.maxCandela.intensity * 0.75;
-  const E = (I * Math.pow(cosTheta, 3)) / (mh * mh);
+  const E = illuminanceAt(dxMH, dyMH, mh);
 
   hoveredPoint.value = {
     x: Math.round(dxMH * 10) / 10,
@@ -245,6 +211,12 @@ onMounted(() => {
   drawTemplate();
 });
 
+watch(units, (next, previous) => {
+  if (next === previous) return;
+  mountingHeight.value = Number((mountingHeight.value * (next === "lux" ? 0.3048 : 1 / 0.3048)).toFixed(4));
+  hoveredPoint.value = null;
+});
+
 watch([() => props.data, mountingHeight, units], () => {
   drawTemplate();
 });
@@ -254,24 +226,16 @@ watch([() => props.data, mountingHeight, units], () => {
   <div class="template-viewer-container">
     <div class="template-toolbar">
       <div class="control-group">
-        <label>Mounting Height (MH):</label>
-        <input
+        <label for="iso-field-1">Mounting Height (MH):</label>
+        <input id="iso-field-1"
           v-model.number="mountingHeight"
           type="number"
-          min="1"
-          max="50"
-          step="0.5"
+          min="0.01"
+          max="1000"
+          step="0.1"
           class="mh-input"
         />
         <span class="unit-tag">{{ units === 'fc' ? 'ft' : 'm' }}</span>
-      </div>
-
-      <div class="control-group">
-        <label>Units:</label>
-        <div class="segmented-control">
-          <button :class="{ active: units === 'fc' }" @click="units = 'fc'">Footcandles (fc)</button>
-          <button :class="{ active: units === 'lux' }" @click="units = 'lux'">Lux (lx)</button>
-        </div>
       </div>
 
       <div class="stat-badge">
@@ -396,6 +360,8 @@ watch([() => props.data, mountingHeight, units], () => {
 
 .canvas-wrap {
   flex: 1;
+  min-height: 0;
+  container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -407,8 +373,9 @@ watch([() => props.data, mountingHeight, units], () => {
 }
 
 .template-canvas {
-  width: min(75vh, 600px);
-  height: min(75vh, 600px);
+  width: min(100cqw, 100cqh, 600px);
+  height: auto;
+  aspect-ratio: 1;
   border-radius: 4px;
   cursor: crosshair;
 }

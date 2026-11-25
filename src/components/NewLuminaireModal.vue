@@ -193,12 +193,12 @@ function handleCreate() {
     fileFormat: "IES",
     headerVersion: "IESNA:LM-63-2002",
     keywords: {
-      "[TEST]": `SYNTHETIC-${Date.now()}`,
-      "[TESTLAB]": "Photometric Synthesis Engine",
-      "[MANUFAC]": manufacturer.value,
-      "[LUMCAT]": catalogNumber.value,
-      "[LUMINAIRE]": luminaireName.value,
-      "[LAMP]": `Integrated LED (${totalLumens.value} lm, ${inputWatts.value}W)`,
+      "TEST": `SYNTHETIC-${Date.now()}`,
+      "TESTLAB": "Photometric Synthesis Engine",
+      "MANUFAC": manufacturer.value,
+      "LUMCAT": catalogNumber.value,
+      "LUMINAIRE": luminaireName.value,
+      "LAMP": `Integrated LED (${totalLumens.value} lm, ${inputWatts.value}W)`,
     },
     lampCount: 1,
     lumensPerLamp: totalLumens.value,
@@ -225,14 +225,14 @@ function handleCreate() {
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="New Luminaire">
       <!-- Header -->
       <div class="modal-header">
         <div class="modal-title">
           <AppIcon name="lightbulb" :size="20" />
           <span>New Luminaire Profile Generator (tool_newpe.exe)</span>
         </div>
-        <button class="icon-button" title="Close" @click="emit('close')">
+        <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
           <AppIcon name="close" :size="16" />
         </button>
       </div>
@@ -300,23 +300,23 @@ function handleCreate() {
             <div class="section-label">2. Photometric & Physical Parameters</div>
             <div class="field-row">
               <div class="field-item">
-                <label>Luminaire Name</label>
-                <input v-model="luminaireName" type="text" class="text-input" />
+                <label for="new-field-1">Luminaire Name</label>
+                <input id="new-field-1" v-model="luminaireName" type="text" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Catalog Number</label>
-                <input v-model="catalogNumber" type="text" class="text-input" />
+                <label for="new-field-2">Catalog Number</label>
+                <input id="new-field-2" v-model="catalogNumber" type="text" class="text-input" />
               </div>
             </div>
 
             <div class="field-row">
               <div class="field-item">
-                <label>Manufacturer</label>
-                <input v-model="manufacturer" type="text" class="text-input" />
+                <label for="new-field-3">Manufacturer</label>
+                <input id="new-field-3" v-model="manufacturer" type="text" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Units</label>
-                <select v-model="unitsType" class="text-input">
+                <label for="new-field-4">Units</label>
+                <select id="new-field-4" v-model="unitsType" class="text-input">
                   <option :value="2">Meters (SI)</option>
                   <option :value="1">Feet (Imperial)</option>
                 </select>
@@ -325,31 +325,31 @@ function handleCreate() {
 
             <div class="field-row">
               <div class="field-item">
-                <label>Total Lumens (lm)</label>
-                <input v-model.number="totalLumens" type="number" step="100" class="text-input" />
+                <label for="new-field-5">Total Lumens (lm)</label>
+                <input id="new-field-5" v-model.number="totalLumens" type="number" step="100" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Input Power (Watts)</label>
-                <input v-model.number="inputWatts" type="number" step="1" class="text-input" />
+                <label for="new-field-6">Input Power (Watts)</label>
+                <input id="new-field-6" v-model.number="inputWatts" type="number" step="1" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Beam Angle (2θ½)</label>
-                <input v-model.number="beamAngle" type="number" step="5" min="10" max="140" class="text-input" />
+                <label for="new-field-7">Beam Angle (2θ½)</label>
+                <input id="new-field-7" v-model.number="beamAngle" type="number" step="5" min="10" max="140" class="text-input" />
               </div>
             </div>
 
             <div class="field-row">
               <div class="field-item">
-                <label>Length</label>
-                <input v-model.number="length" type="number" step="0.1" class="text-input" />
+                <label for="new-field-8">Length</label>
+                <input id="new-field-8" v-model.number="length" type="number" step="0.1" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Width</label>
-                <input v-model.number="width" type="number" step="0.1" class="text-input" />
+                <label for="new-field-9">Width</label>
+                <input id="new-field-9" v-model.number="width" type="number" step="0.1" class="text-input" />
               </div>
               <div class="field-item">
-                <label>Height</label>
-                <input v-model.number="height" type="number" step="0.05" class="text-input" />
+                <label for="new-field-10">Height</label>
+                <input id="new-field-10" v-model.number="height" type="number" step="0.05" class="text-input" />
               </div>
             </div>
           </div>
@@ -415,6 +415,7 @@ function handleCreate() {
   flex-direction: column;
   color: var(--text, #edebe8);
   overflow: hidden;
+  container-type: inline-size;
 }
 
 .modal-header {
@@ -501,6 +502,7 @@ function handleCreate() {
 
 .form-pane {
   flex: 1.6;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -508,6 +510,7 @@ function handleCreate() {
 
 .preview-pane {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
 }
@@ -540,6 +543,7 @@ function handleCreate() {
 
 .field-item {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -551,6 +555,8 @@ function handleCreate() {
 }
 
 .text-input {
+  width: 100%;
+  min-width: 0;
   background: var(--well, #2a2a32);
   border: 1px solid var(--line-soft, #3d3d46);
   color: var(--text, #edebe8);
@@ -562,6 +568,11 @@ function handleCreate() {
 
 .text-input:focus {
   border-color: var(--accent, #d97706);
+}
+
+@container (max-width: 720px) {
+  .preset-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .config-columns { flex-direction: column; }
 }
 
 .modal-footer {

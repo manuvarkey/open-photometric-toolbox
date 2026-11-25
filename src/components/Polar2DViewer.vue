@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import AppIcon from "./AppIcon.vue";
 import type { PhotometricData } from "../core/types";
 
@@ -15,12 +15,8 @@ const props = withDefaults(
   }
 );
 
-const emit = defineEmits<{
-  (e: "update:activePlane", plane: "all" | "max" | "0" | "90"): void;
-}>();
-
 const currentPlane = ref<"all" | "max" | "0" | "90">(props.activePlane);
-const plotMode = ref<"polar" | "cartesian">(props.initialPlotMode);
+const plotMode = computed(() => props.initialPlotMode);
 const hoveredPoint = ref<{ angle: number; cd: number; plane: string; x: number; y: number } | null>(null);
 
 // Interactive 2D Zoom & Pan State
@@ -64,6 +60,7 @@ function onWindowMouseUp() {
   window.removeEventListener("mousemove", onWindowMouseMove);
   window.removeEventListener("mouseup", onWindowMouseUp);
 }
+onBeforeUnmount(onWindowMouseUp);
 
 function zoomIn() {
   zoomLevel.value = Math.min(5.0, Number((zoomLevel.value * 1.25).toFixed(2)));
@@ -85,11 +82,6 @@ watch(
     if (val) currentPlane.value = val;
   }
 );
-
-function setPlane(plane: "all" | "max" | "0" | "90") {
-  currentPlane.value = plane;
-  emit("update:activePlane", plane);
-}
 
 const maxVal = computed(() => {
   return Math.max(1, props.data?.calculated.maxCandela.intensity ?? 100);
@@ -265,7 +257,7 @@ const allCurves = computed(() => {
   const peak0 = Math.round(Math.max(...(candela[idx0] || [0])) * mult);
   result.push({
     id: "0",
-    name: "0° - 180° Plane (Transverse)",
+    name: "0° Transverse",
     polarPath: polar0,
     cartPath: cart0,
     color: "var(--graph-curve-0, #38bdf8)",
@@ -302,7 +294,7 @@ const allCurves = computed(() => {
   const peak90 = Math.round(Math.max(...(candela[idx90] || [0])) * mult);
   result.push({
     id: "90",
-    name: "90° - 270° Plane (Longitudinal)",
+    name: "90° Longitudinal",
     polarPath: polar90,
     cartPath: cart90,
     color: "var(--graph-curve-90, #f472b6)",
@@ -372,71 +364,15 @@ function handleCartesianMouseLeave() {
   <div class="polar-viewer-container">
     <!-- Top Control Bar: Graph Mode, Plane Switcher & Zoom Controls -->
     <div class="top-controls-bar">
-      <!-- Plot Mode Toggle: Polar vs Cartesian -->
-      <div class="plot-mode-group">
-        <button
-          class="mode-btn"
-          :class="{ active: plotMode === 'polar' }"
-          title="Polar Candela Curve Distribution"
-          @click="plotMode = 'polar'"
-        >
-          <span>Polar 2D</span>
-        </button>
-        <button
-          class="mode-btn"
-          :class="{ active: plotMode === 'cartesian' }"
-          title="Cartesian X-Y Candela Distribution (Intensity vs. Angle)"
-          @click="plotMode = 'cartesian'"
-        >
-          <span>Cartesian X-Y</span>
-        </button>
-      </div>
-
-      <!-- Plane Filter Bar -->
-      <div class="plane-switcher-bar">
-        <span class="switcher-label">Plane:</span>
-        <button
-          class="plane-pill"
-          :class="{ active: currentPlane === 'all' }"
-          @click="setPlane('all')"
-        >
-          All Planes
-        </button>
-        <button
-          class="plane-pill"
-          :class="{ active: currentPlane === 'max' }"
-          @click="setPlane('max')"
-        >
-          <span class="color-dot" style="background: var(--graph-curve-max, #fbbf24)"></span>
-          Max Plane
-        </button>
-        <button
-          class="plane-pill"
-          :class="{ active: currentPlane === '0' }"
-          @click="setPlane('0')"
-        >
-          <span class="color-dot" style="background: var(--graph-curve-0, #38bdf8)"></span>
-          0° Transverse
-        </button>
-        <button
-          class="plane-pill"
-          :class="{ active: currentPlane === '90' }"
-          @click="setPlane('90')"
-        >
-          <span class="color-dot" style="background: var(--graph-curve-90, #f472b6)"></span>
-          90° Longitudinal
-        </button>
-      </div>
-
       <!-- Zoom Controls Group -->
       <div class="zoom-controls-group">
-        <button class="zoom-btn" title="Zoom Out" @click="zoomOut">
+        <button class="zoom-btn" aria-label="Zoom Out" title="Zoom Out" @click="zoomOut">
           <AppIcon name="minus" :size="13" />
         </button>
-        <button class="zoom-btn zoom-level-badge" title="Reset Zoom (100%)" @click="resetZoom">
+        <span class="zoom-btn zoom-level-badge">
           {{ Math.round(zoomLevel * 100) }}%
-        </button>
-        <button class="zoom-btn" title="Zoom In" @click="zoomIn">
+        </span>
+        <button class="zoom-btn" aria-label="Zoom In" title="Zoom In" @click="zoomIn">
           <AppIcon name="plus" :size="13" />
         </button>
         <button class="zoom-btn reset-btn" title="Reset Zoom and Pan (Fit)" @click="resetZoom">
@@ -688,12 +624,11 @@ function handleCartesianMouseLeave() {
         v-for="c in allCurves"
         :key="c.name"
         class="legend-item"
+        :title="`${c.peakCd} cd peak`"
         :class="{ inactive: currentPlane !== 'all' && currentPlane !== c.id }"
-        @click="setPlane(c.id as any)"
       >
         <span class="legend-color-swatch" :style="{ background: c.color }"></span>
         <span class="legend-name">{{ c.name }}</span>
-        <span class="legend-val">({{ c.peakCd }} cd)</span>
       </div>
     </div>
   </div>
@@ -704,12 +639,12 @@ function handleCartesianMouseLeave() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   width: 100%;
   height: 100%;
   padding: 16px;
   background: var(--workspace, #26262d);
-  overflow: auto;
+  overflow: hidden;
 }
 
 .top-controls-bar {
@@ -720,6 +655,7 @@ function handleCartesianMouseLeave() {
   flex-wrap: wrap;
   justify-content: center;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 .plot-mode-group {
@@ -862,7 +798,8 @@ function handleCartesianMouseLeave() {
 .graph-viewport {
   flex: 1;
   width: 100%;
-  min-height: 440px;
+  min-height: 0;
+  container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -880,13 +817,15 @@ function handleCartesianMouseLeave() {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
   transition: transform 0.04s ease-out;
   will-change: transform;
 }
 
 .polar-svg-wrap {
-  width: 500px;
-  height: 500px;
+  width: min(100%, 100cqh, 500px);
+  aspect-ratio: 1;
   flex-shrink: 0;
 }
 
@@ -896,8 +835,8 @@ function handleCartesianMouseLeave() {
 }
 
 .cartesian-svg-wrap {
-  width: 640px;
-  height: 400px;
+  width: min(100%, 160cqh, 640px);
+  aspect-ratio: 8 / 5;
   flex-shrink: 0;
 }
 
@@ -943,9 +882,12 @@ function handleCartesianMouseLeave() {
 
 .polar-legend {
   display: flex;
-  gap: 16px;
-  margin-top: 14px;
-  padding: 8px 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 4px 12px;
+  margin-top: 6px;
+  padding: 4px 8px;
   background: var(--panel);
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
@@ -958,7 +900,6 @@ function handleCartesianMouseLeave() {
   gap: 8px;
   font-size: 0.8rem;
   color: var(--text);
-  cursor: pointer;
   padding: 2px 6px;
   border-radius: 3px;
   transition: opacity 0.15s ease;

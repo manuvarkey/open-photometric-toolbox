@@ -283,6 +283,12 @@ function rebuildGrid() {
   }
 }
 
+let resizeObserver: ResizeObserver | undefined;
+function stopDragging() {
+  isDragging = false;
+  isPanning = false;
+}
+
 function setupInteractions() {
   const el = canvasContainer.value;
   if (!el) return;
@@ -294,10 +300,7 @@ function setupInteractions() {
     prevMouseY = e.clientY;
   });
 
-  window.addEventListener("mouseup", () => {
-    isDragging = false;
-    isPanning = false;
-  });
+  window.addEventListener("mouseup", stopDragging);
 
   el.addEventListener("contextmenu", (e) => e.preventDefault());
 
@@ -329,7 +332,7 @@ function setupInteractions() {
     { passive: false }
   );
 
-  const resizeObserver = new ResizeObserver(() => {
+  resizeObserver = new ResizeObserver(() => {
     if (!canvasContainer.value || !renderer || !camera) return;
     const w = canvasContainer.value.clientWidth;
     const h = canvasContainer.value.clientHeight;
@@ -366,6 +369,8 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrameId);
+  resizeObserver?.disconnect();
+  window.removeEventListener("mouseup", stopDragging);
   renderer?.dispose();
 });
 </script>
@@ -374,7 +379,7 @@ onBeforeUnmount(() => {
   <div class="photometric-3d-wrapper">
     <div ref="canvasContainer" class="three-canvas"></div>
     <div class="viewport-overlay-controls">
-      <button class="overlay-btn" title="Reset View" @click="resetView">
+      <button class="overlay-btn" aria-label="Reset View" title="Reset View" @click="resetView">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8 M3 3v5h5" />
         </svg>

@@ -55,10 +55,10 @@ const filteredCatalog = computed(() => {
         const q = searchQuery.value.toLowerCase();
         const d = item.data;
         const matchesName = d.fileName.toLowerCase().includes(q);
-        const matchesCat = (d.keywords["[LUMCAT]"] || "").toLowerCase().includes(q);
-        const matchesLum = (d.keywords["[LUMINAIRE]"] || "").toLowerCase().includes(q);
-        const matchesMan = (d.keywords["[MANUFAC]"] || "").toLowerCase().includes(q);
-        const matchesLamp = (d.keywords["[LAMP]"] || "").toLowerCase().includes(q);
+        const matchesCat = (d.keywords["LUMCAT"] || "").toLowerCase().includes(q);
+        const matchesLum = (d.keywords["LUMINAIRE"] || "").toLowerCase().includes(q);
+        const matchesMan = (d.keywords["MANUFAC"] || "").toLowerCase().includes(q);
+        const matchesLamp = (d.keywords["LAMP"] || "").toLowerCase().includes(q);
         if (!matchesName && !matchesCat && !matchesLum && !matchesMan && !matchesLamp) {
           return false;
         }
@@ -103,7 +103,8 @@ function handleImportFiles(e: Event) {
             data: parsed,
           });
         } catch (err) {
-          console.warn("Failed to parse IES file:", file.name, err);
+          const reason = err instanceof Error ? err.message : String(err);
+          window.alert(`Could not import ${file.name}: ${reason}`);
         }
       }
     };
@@ -148,7 +149,7 @@ function getThumbnailPath(d: PhotometricData): string {
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="catalog-window">
+    <div class="catalog-window" role="dialog" aria-modal="true" aria-label="Photometric Library">
       <!-- Header -->
       <div class="catalog-header">
         <div class="header-branding">
@@ -169,7 +170,7 @@ function getThumbnailPath(d: PhotometricData): string {
             style="display: none"
             @change="handleImportFiles"
           />
-          <button class="icon-button" title="Close" @click="emit('close')">
+          <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
             <AppIcon name="close" :size="16" />
           </button>
         </div>
@@ -182,10 +183,11 @@ function getThumbnailPath(d: PhotometricData): string {
           <input
             v-model="searchQuery"
             type="text"
+            aria-label="Search luminaires"
             placeholder="Search by catalog number, luminaire name, manufacturer, or lamp..."
             class="search-input"
           />
-          <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">×</button>
+          <button v-if="searchQuery" class="clear-btn" aria-label="Clear search" @click="searchQuery = ''">×</button>
         </div>
 
         <div class="filter-controls">
@@ -221,8 +223,8 @@ function getThumbnailPath(d: PhotometricData): string {
           </div>
 
           <div class="sort-wrap">
-            <label>Sort:</label>
-            <select v-model="sortBy" class="sort-select">
+            <label for="catalog-field-1">Sort:</label>
+            <select id="catalog-field-1" v-model="sortBy" class="sort-select">
               <option value="name">Name / File</option>
               <option value="lumens">Lumens (High to Low)</option>
               <option value="efficacy">Efficacy (LER)</option>
@@ -250,14 +252,14 @@ function getThumbnailPath(d: PhotometricData): string {
           <!-- Middle: Metadata -->
           <div class="card-details">
             <div class="card-title-row">
-              <span class="lum-title">{{ item.data.keywords["[LUMINAIRE]"] || item.data.fileName }}</span>
+              <span class="lum-title">{{ item.data.keywords["LUMINAIRE"] || item.data.fileName }}</span>
               <span class="cat-badge">{{ item.category }}</span>
             </div>
 
             <div class="card-meta-line">
-              <span class="lumcat">{{ item.data.keywords["[LUMCAT]"] || "Generic" }}</span>
+              <span class="lumcat">{{ item.data.keywords["LUMCAT"] || "Generic" }}</span>
               <span class="divider">•</span>
-              <span class="manufac">{{ item.data.keywords["[MANUFAC]"] || "Standard" }}</span>
+              <span class="manufac">{{ item.data.keywords["MANUFAC"] || "Standard" }}</span>
             </div>
 
             <div class="metrics-row">
@@ -435,7 +437,7 @@ function getThumbnailPath(d: PhotometricData): string {
 .cat-pill.active {
   background: var(--accent, #d97706);
   border-color: var(--accent, #d97706);
-  color: #ffffff;
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -607,7 +609,7 @@ function getThumbnailPath(d: PhotometricData): string {
 
 .button.primary {
   background: var(--accent, #d97706);
-  color: #ffffff;
+  color: var(--on-accent);
 }
 
 .button.primary:hover {

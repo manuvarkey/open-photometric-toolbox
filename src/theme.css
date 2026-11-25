@@ -35,6 +35,8 @@
   --text: #edebe8;
   --muted: #bebdbd;
   --hint: #a7a7a8;
+  --text-soft: var(--muted);
+  --hover: var(--raised);
   --accent: #fbbf24;
   --accent-fill: #d97706;
   --accent-soft: #513f32;
@@ -57,6 +59,7 @@
 }
 :root[data-theme="light"] {
   --toolbar-icon: #334155;
+  --on-accent: #ffffff;
   --danger: #dc2626;
   --error-text: #b91c1c;
   --error-bg: #fef2f2;

@@ -28,14 +28,14 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="CIE Classification">
       <!-- Modal Header -->
       <div class="modal-header">
         <div class="modal-title">
           <AppIcon name="chart" :size="20" />
           <span>CIE Luminaire Classification & Flux Code</span>
         </div>
-        <button class="icon-button" title="Close" @click="emit('close')">
+        <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
           <AppIcon name="close" :size="16" />
         </button>
       </div>
@@ -210,7 +210,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 
 .cie-type-badge {
   background: var(--accent, #d97706);
-  color: #fff;
+  color: var(--on-accent);
   font-size: 0.85rem;
   font-weight: 700;
   padding: 3px 10px;
@@ -291,7 +291,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
   font-size: 0.9rem;
   font-weight: 700;
   background: var(--accent, #d97706);
-  color: #fff;
+  color: var(--on-accent);
   padding: 2px 8px;
   border-radius: 3px;
   letter-spacing: 1px;

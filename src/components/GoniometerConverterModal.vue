@@ -135,8 +135,8 @@ function generateConvertedData(): PhotometricData {
 
   const newKeywords = {
     ...props.data.keywords,
-    "[TEST]": `${props.data.keywords["[TEST]"] || "Goniometer Conversion"} (Converted to Type ${targetType.value === 1 ? "C" : "B"})`,
-    "[CONVERSION]": `Converted via LAIGlareNet Convert_${currentType.value === 1 ? "CB" : "BC"} algorithm`,
+    "TEST": `${props.data.keywords["TEST"] || "Goniometer Conversion"} (Converted to Type ${targetType.value === 1 ? "C" : "B"})`,
+    "CONVERSION": `Converted via LAIGlareNet Convert_${currentType.value === 1 ? "CB" : "BC"} algorithm`,
   };
 
   const calculated = computePhotometrics(
@@ -205,14 +205,14 @@ function downloadConvertedLDT() {
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="modal-box">
+    <div class="modal-box" role="dialog" aria-modal="true" aria-label="Goniometer Converter">
       <!-- Header -->
       <div class="modal-header">
         <div class="modal-title">
           <AppIcon name="convert" :size="20" />
           <span>Goniophotometer Web Conversion (Type B ↔ Type C)</span>
         </div>
-        <button class="icon-button" title="Close" @click="emit('close')">
+        <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
           <AppIcon name="close" :size="16" />
         </button>
       </div>
@@ -233,8 +233,8 @@ function downloadConvertedLDT() {
             </div>
 
             <div class="config-item">
-              <label>Target Goniometer Type:</label>
-              <select v-model="targetType" class="select-field">
+              <label for="converter-field-1">Target Goniometer Type:</label>
+              <select id="converter-field-1" v-model="targetType" class="select-field">
                 <option :value="1">Type C (Architectural / Roadway)</option>
                 <option :value="2">Type B (Floodlight / Projector)</option>
               </select>
@@ -271,7 +271,7 @@ function downloadConvertedLDT() {
           <p>
             Transforms rectangular projector coordinates $(H, V)$ to architectural spherical angles $(\theta, \psi)$:
             $$\cos\theta = \cos H \cos V, \quad \psi = \arctan2(\sin H, \sin V \cos H)$$
-            Interpolates intermediate intensities via bilinear solid-angle weighting preserving total integrated lumens.
+            Interpolates intermediate intensities using bilinear interpolation. Check the converted flux before use.
           </p>
         </div>
       </div>
@@ -280,15 +280,15 @@ function downloadConvertedLDT() {
       <div class="modal-footer">
         <button class="button secondary" @click="downloadConvertedLDT">
           <AppIcon name="convert" :size="14" />
-          <span>Export .ldt</span>
+          <span>Export LDT</span>
         </button>
         <button class="button secondary" @click="downloadConvertedIES">
           <AppIcon name="save" :size="14" />
-          <span>Export .ies</span>
+          <span>Save IES</span>
         </button>
         <button class="button primary" @click="applyConversion">
           <AppIcon name="check" :size="14" />
-          <span>Apply to Current Workspace</span>
+          <span>Apply</span>
         </button>
       </div>
     </div>

@@ -8,7 +8,7 @@ export function serializeEULUMDAT(data: PhotometricData): string {
   const lines: string[] = [];
 
   // Line 1: Company name
-  lines.push(data.keywords["[MANUFAC]"] || "Lighting Analysts");
+  lines.push(data.keywords["MANUFAC"] || "Lighting Analysts");
 
   // Line 2: Type indicator (1: point source with symm, 2: linear, 3: other point source)
   lines.push(data.numHorizontalAngles > 1 ? "3" : "1");
@@ -33,19 +33,19 @@ export function serializeEULUMDAT(data: PhotometricData): string {
   lines.push("0");
 
   // Line 8: Measurement report number
-  lines.push(data.keywords["[TEST]"] || "LAB-REPORT-01");
+  lines.push(data.keywords["TEST"] || "LAB-REPORT-01");
 
   // Line 9: Luminaire name
-  lines.push(data.keywords["[LUMINAIRE]"] || "Architectural Luminaire");
+  lines.push(data.keywords["LUMINAIRE"] || "Architectural Luminaire");
 
   // Line 10: Luminaire number
-  lines.push(data.keywords["[LUMCAT]"] || "DL-100");
+  lines.push(data.keywords["LUMCAT"] || "DL-100");
 
   // Line 11: File name
   lines.push(data.fileName.replace(/\.ies$/i, ".ldt"));
 
   // Line 12: Date/user
-  lines.push(data.keywords["[DATE]"] || new Date().toISOString().slice(0, 10));
+  lines.push(data.keywords["DATE"] || new Date().toISOString().slice(0, 10));
 
   // Lines 13-15: Dimensions of luminaire (mm)
   const toMm = data.unitsType === 1 ? 304.8 : 1000.0;
@@ -80,7 +80,7 @@ export function serializeEULUMDAT(data: PhotometricData): string {
   lines.push(String(Math.max(1, data.lampCount)));
 
   // Line 25: Type of lamps
-  lines.push(data.keywords["[LAMP]"] || "LED");
+  lines.push(data.keywords["LAMP"] || "LED");
 
   // Line 26: Total luminous flux of lamps (lm)
   const lampLumens = data.lumensPerLamp > 0 ? data.lumensPerLamp * data.lampCount : data.calculated.totalLuminaireLumens;

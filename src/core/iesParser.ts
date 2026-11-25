@@ -10,6 +10,7 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
 
   let headerVersion = "IESNA:LM-63";
   const keywords: Record<string, string> = {};
+  let foundTilt = false;
 
   // 1. Parse header lines and keywords
   while (lineIdx < lines.length) {
@@ -33,6 +34,7 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
     }
 
     if (rawLine.toUpperCase().startsWith("TILT=")) {
+      foundTilt = true;
       const tiltType = rawLine.substring(5).trim().toUpperCase();
       if (tiltType !== "NONE") {
         // Skip tilt data rows if present
@@ -42,6 +44,10 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
       }
       break;
     }
+  }
+
+  if (!foundTilt) {
+    throw new Error("Missing IES TILT record. LDT import is not currently supported.");
   }
 
   // 2. Tokenize all remaining numbers across arbitrary whitespace/newlines
@@ -75,6 +81,10 @@ export function parseIES(content: string, fileName = "luminaire.ies"): Photometr
   const ballastFactor = nextFloat() || 1.0;
   nextFloat(); // ballast-lamp factor / future use
   const inputWatts = nextFloat();
+
+  if (numVerticalAngles < 1 || numHorizontalAngles < 1 || tokens.length - tokIdx < numVerticalAngles + numHorizontalAngles + numVerticalAngles * numHorizontalAngles) {
+    throw new Error("Incomplete or invalid IES angle and candela data.");
+  }
 
   // 3. Read vertical angles
   const verticalAngles: number[] = [];

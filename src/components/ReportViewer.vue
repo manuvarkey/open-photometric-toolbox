@@ -28,12 +28,14 @@ function printReport() {
 async function downloadHtmlReport() {
   const element = document.getElementById("printable-report-content");
   if (!element) return;
+  const title = `${reportTitle.value} — ${props.data.fileName}`
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
   const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>${reportTitle.value} — ${props.data.fileName}</title>
+  <title>${title}</title>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 30px; color: #18181b; background: #fff; line-height: 1.4; font-size: 12px; }
     h1 { font-size: 18px; margin: 0 0 4px; color: #0f172a; }
@@ -51,6 +53,16 @@ async function downloadHtmlReport() {
     .doc-section { margin-bottom: 16px; }
     .section-title { font-weight: bold; font-size: 12px; color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
     .polar-svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
+    .doc-header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; }
+    .doc-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .doc-subtitle, .polar-caption { color: #64748b; }
+    .report-stamp { background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: 10px; }
+    .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
+    .meta-col { display: flex; flex-direction: column; gap: 2px; }
+    .polar-summary-section { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 14px; }
+    .polar-box { display: flex; flex-direction: column; align-items: center; }
+    .report-polar-svg { width: 180px; height: 180px; }
+    .cu-report-table th, .cu-report-table td { font-size: 9px; padding: 2px 3px; text-align: center; }
     .doc-footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 9px; color: #94a3b8; text-align: center; }
   </style>
 </head>
@@ -128,32 +140,7 @@ const polarSvgPath = computed(() => {
   <div class="reports-root">
     <!-- Toolbar -->
     <div class="report-toolbar no-print">
-      <div class="type-selector">
-        <button
-          class="report-tab"
-          :class="{ active: activeReport === 'indoor' }"
-          @click="activeReport = 'indoor'"
-        >
-          <AppIcon name="lightbulb" :size="15" />
-          <span>Indoor Report</span>
-        </button>
-        <button
-          class="report-tab"
-          :class="{ active: activeReport === 'roadway' }"
-          @click="activeReport = 'roadway'"
-        >
-          <AppIcon name="layers" :size="15" />
-          <span>Roadway Report (RP-8)</span>
-        </button>
-        <button
-          class="report-tab"
-          :class="{ active: activeReport === 'floodlight' }"
-          @click="activeReport = 'floodlight'"
-        >
-          <AppIcon name="shield" :size="15" />
-          <span>Floodlight Report (NEMA)</span>
-        </button>
-      </div>
+      <label>Report Type <select v-model="activeReport"><option value="indoor">Indoor</option><option value="roadway">Roadway</option><option value="floodlight">Floodlight</option></select></label>
 
       <div class="action-buttons">
         <button class="btn-action primary" @click="printReport">
@@ -184,19 +171,19 @@ const polarSvgPath = computed(() => {
 
           <div class="luminaire-meta-box">
             <div class="meta-col">
-              <div><strong>Catalog:</strong> {{ data.keywords["[LUMCAT]"] || "Generic" }}</div>
-              <div><strong>Luminaire:</strong> {{ data.keywords["[LUMINAIRE]"] || "Architectural Luminaire" }}</div>
-              <div><strong>Manufacturer:</strong> {{ data.keywords["[MANUFAC]"] || "Lighting Analysts" }}</div>
+              <div><strong>Catalog:</strong> {{ data.keywords["LUMCAT"] || "Generic" }}</div>
+              <div><strong>Luminaire:</strong> {{ data.keywords["LUMINAIRE"] || "Architectural Luminaire" }}</div>
+              <div><strong>Manufacturer:</strong> {{ data.keywords["MANUFAC"] || "Lighting Analysts" }}</div>
             </div>
             <div class="meta-col">
-              <div><strong>Lamp:</strong> {{ data.keywords["[LAMP]"] || "Integrated LED" }}</div>
+              <div><strong>Lamp:</strong> {{ data.keywords["LAMP"] || "Integrated LED" }}</div>
               <div><strong>Input Watts:</strong> {{ data.inputWatts.toFixed(1) }} W</div>
-              <div><strong>Test Lab:</strong> {{ data.keywords["[TESTLAB]"] || "Optical Testing Lab" }}</div>
+              <div><strong>Test Lab:</strong> {{ data.keywords["TESTLAB"] || "Optical Testing Lab" }}</div>
             </div>
             <div class="meta-col">
               <div><strong>Total Lumens:</strong> {{ data.calculated.totalLuminaireLumens.toLocaleString() }} lm</div>
               <div><strong>Luminous Efficacy:</strong> {{ data.calculated.efficacyLER }} lm/W</div>
-              <div><strong>Test Date:</strong> {{ data.keywords["[DATE]"] || "2024-05-15" }}</div>
+              <div><strong>Test Date:</strong> {{ data.keywords["DATE"] || "2024-05-15" }}</div>
             </div>
           </div>
         </header>
@@ -448,6 +435,15 @@ const polarSvgPath = computed(() => {
   flex-wrap: wrap;
 }
 
+.report-toolbar select {
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  padding: 6px 9px;
+  font: inherit;
+}
+
 .type-selector {
   display: flex;
   background: var(--panel);
@@ -496,22 +492,24 @@ const polarSvgPath = computed(() => {
 .btn-action.primary {
   background: var(--accent);
   border-color: var(--accent);
-  color: #fff;
+  color: var(--on-accent);
   font-weight: 500;
 }
 
 .paper-container {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: auto;
   padding: 20px;
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
 }
 
 .report-paper {
   background: #ffffff;
   color: #18181b;
   width: 820px;
+  flex: 0 0 820px;
   min-height: 1050px;
   padding: 32px 36px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);

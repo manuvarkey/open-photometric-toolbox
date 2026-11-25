@@ -14,13 +14,12 @@ const emit = defineEmits<{
 }>();
 
 // Form state
-const lumcat = ref(props.data.keywords["[LUMCAT]"] || "");
-const luminaire = ref(props.data.keywords["[LUMINAIRE]"] || "");
-const manufac = ref(props.data.keywords["[MANUFAC]"] || "");
-const lamp = ref(props.data.keywords["[LAMP]"] || "");
-const test = ref(props.data.keywords["[TEST]"] || "");
-const testlab = ref(props.data.keywords["[TESTLAB]"] || "");
-const date = ref(props.data.keywords["[DATE]"] || "");
+const lumcat = ref(props.data.keywords["LUMCAT"] || "");
+const luminaire = ref(props.data.keywords["LUMINAIRE"] || "");
+const manufac = ref(props.data.keywords["MANUFAC"] || "");
+const lamp = ref(props.data.keywords["LAMP"] || "");
+const testlab = ref(props.data.keywords["TESTLAB"] || "");
+const date = ref(props.data.keywords["DATE"] || "");
 
 const multiplier = ref(props.data.multiplier);
 const ballastFactor = ref(props.data.ballastFactor);
@@ -37,13 +36,10 @@ const candelaScale = ref(1.0);
 
 function handleApply() {
   const updatedKeywords = { ...props.data.keywords };
-  if (lumcat.value) updatedKeywords["[LUMCAT]"] = lumcat.value;
-  if (luminaire.value) updatedKeywords["[LUMINAIRE]"] = luminaire.value;
-  if (manufac.value) updatedKeywords["[MANUFAC]"] = manufac.value;
-  if (lamp.value) updatedKeywords["[LAMP]"] = lamp.value;
-  if (test.value) updatedKeywords["[TEST]"] = test.value;
-  if (testlab.value) updatedKeywords["[TESTLAB]"] = testlab.value;
-  if (date.value) updatedKeywords["[DATE]"] = date.value;
+  for (const [key, value] of Object.entries({ LUMCAT: lumcat.value, LUMINAIRE: luminaire.value, MANUFAC: manufac.value, LAMP: lamp.value, TESTLAB: testlab.value, DATE: date.value })) {
+    if (value) updatedKeywords[key] = value;
+    else delete updatedKeywords[key];
+  }
 
   // Clone and scale candela matrix if candelaScale != 1.0
   const scale = candelaScale.value > 0 ? candelaScale.value : 1.0;
@@ -90,13 +86,13 @@ function handleApply() {
 
 <template>
   <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="editor-modal">
+    <div class="editor-modal" role="dialog" aria-modal="true" aria-label="Photometric File Editor">
       <div class="editor-header">
         <div class="title-wrap">
           <AppIcon name="edit" :size="18" />
           <span>Photometric File Editor</span>
         </div>
-        <button class="icon-button" @click="emit('close')">
+        <button class="icon-button" aria-label="Close" @click="emit('close')">
           <AppIcon name="close" :size="14" />
         </button>
       </div>
@@ -107,28 +103,28 @@ function handleApply() {
           <legend>Luminaire Identity Keywords</legend>
           <div class="form-grid">
             <div class="field">
-              <label>[LUMCAT] Catalog Number</label>
-              <input v-model="lumcat" type="text" />
+              <label for="editor-field-1">[LUMCAT] Catalog Number</label>
+              <input id="editor-field-1" v-model="lumcat" type="text" />
             </div>
             <div class="field">
-              <label>[MANUFAC] Manufacturer</label>
-              <input v-model="manufac" type="text" />
+              <label for="editor-field-2">[MANUFAC] Manufacturer</label>
+              <input id="editor-field-2" v-model="manufac" type="text" />
             </div>
             <div class="field span-2">
-              <label>[LUMINAIRE] Description</label>
-              <input v-model="luminaire" type="text" />
+              <label for="editor-field-3">[LUMINAIRE] Description</label>
+              <input id="editor-field-3" v-model="luminaire" type="text" />
             </div>
             <div class="field span-2">
-              <label>[LAMP] Lamp Description</label>
-              <input v-model="lamp" type="text" />
+              <label for="editor-field-4">[LAMP] Lamp Description</label>
+              <input id="editor-field-4" v-model="lamp" type="text" />
             </div>
             <div class="field">
-              <label>[TESTLAB] Test Laboratory</label>
-              <input v-model="testlab" type="text" />
+              <label for="editor-field-5">[TESTLAB] Test Laboratory</label>
+              <input id="editor-field-5" v-model="testlab" type="text" />
             </div>
             <div class="field">
-              <label>[DATE] Test Date</label>
-              <input v-model="date" type="text" />
+              <label for="editor-field-6">[DATE] Test Date</label>
+              <input id="editor-field-6" v-model="date" type="text" />
             </div>
           </div>
         </fieldset>
@@ -138,20 +134,20 @@ function handleApply() {
           <legend>Electrical & Photometric Parameters</legend>
           <div class="form-grid four-col">
             <div class="field">
-              <label>Input Watts (W)</label>
-              <input v-model.number="inputWatts" type="number" step="0.5" />
+              <label for="editor-field-7">Input Watts (W)</label>
+              <input id="editor-field-7" v-model.number="inputWatts" type="number" step="0.5" />
             </div>
             <div class="field">
-              <label>Multiplier</label>
-              <input v-model.number="multiplier" type="number" step="0.01" />
+              <label for="editor-field-8">Multiplier</label>
+              <input id="editor-field-8" v-model.number="multiplier" type="number" step="0.01" />
             </div>
             <div class="field">
-              <label>Lumens / Lamp</label>
-              <input v-model.number="lumensPerLamp" type="number" step="10" />
+              <label for="editor-field-9">Lumens / Lamp</label>
+              <input id="editor-field-9" v-model.number="lumensPerLamp" type="number" step="10" />
             </div>
             <div class="field">
-              <label>Lamp Count</label>
-              <input v-model.number="lampCount" type="number" step="1" />
+              <label for="editor-field-10">Lamp Count</label>
+              <input id="editor-field-10" v-model.number="lampCount" type="number" step="1" />
             </div>
           </div>
         </fieldset>
@@ -161,27 +157,27 @@ function handleApply() {
           <legend>Luminous Dimensions & Scaling</legend>
           <div class="form-grid four-col">
             <div class="field">
-              <label>Length</label>
-              <input v-model.number="luminousLength" type="number" step="0.05" />
+              <label for="editor-field-11">Length</label>
+              <input id="editor-field-11" v-model.number="luminousLength" type="number" step="0.05" />
             </div>
             <div class="field">
-              <label>Width</label>
-              <input v-model.number="luminousWidth" type="number" step="0.05" />
+              <label for="editor-field-12">Width</label>
+              <input id="editor-field-12" v-model.number="luminousWidth" type="number" step="0.05" />
             </div>
             <div class="field">
-              <label>Height</label>
-              <input v-model.number="luminousHeight" type="number" step="0.05" />
+              <label for="editor-field-13">Height</label>
+              <input id="editor-field-13" v-model.number="luminousHeight" type="number" step="0.05" />
             </div>
             <div class="field">
-              <label>Units</label>
-              <select v-model.number="unitsType" class="select-input">
+              <label for="editor-field-14">Units</label>
+              <select id="editor-field-14" v-model.number="unitsType" class="select-input">
                 <option :value="1">Feet (ft)</option>
                 <option :value="2">Meters (m)</option>
               </select>
             </div>
             <div class="field span-2">
-              <label>Candela Array Scale Factor</label>
-              <input v-model.number="candelaScale" type="number" step="0.05" />
+              <label for="editor-field-15">Candela Array Scale Factor</label>
+              <input id="editor-field-15" v-model.number="candelaScale" type="number" step="0.05" />
               <small class="field-hint">1.0 = unchanged, 1.1 = +10% intensity</small>
             </div>
           </div>
@@ -190,7 +186,7 @@ function handleApply() {
 
       <div class="editor-footer">
         <button class="btn-cancel" @click="emit('close')">Cancel</button>
-        <button class="btn-save" @click="handleApply">Apply Changes & Recalculate</button>
+        <button class="btn-save" @click="handleApply">Apply</button>
       </div>
     </div>
   </div>
@@ -263,17 +259,18 @@ function handleApply() {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px 14px;
 }
 
 .form-grid.four-col {
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
 .field {
   display: flex;
   flex-direction: column;
+  min-width: 0;
   gap: 4px;
 }
 
@@ -288,6 +285,8 @@ function handleApply() {
 
 .field input,
 .select-input {
+  width: 100%;
+  min-width: 0;
   padding: 6px 10px;
   background: var(--raised);
   border: 1px solid var(--line);

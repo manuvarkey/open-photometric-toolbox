@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onMounted, onBeforeUnmount, nextTick, ref, watch } from "vue";
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
@@ -27,16 +27,7 @@ import {
 } from "./core/samples";
 import type { PhotometricData } from "./core/types";
 
-type RibbonTab =
-  | "home"
-  | "3d"
-  | "polar"
-  | "template"
-  | "cu"
-  | "analysis"
-  | "reports"
-  | "compare"
-  | "view";
+type RibbonTab = "file" | "visualize" | "analysis" | "compare" | "reports";
 
 type ViewportMode =
   | "3d"
@@ -51,9 +42,14 @@ type ViewportMode =
 // State
 const currentData = ref<PhotometricData | null>(null);
 const currentFileName = ref("Commercial_Downlight_40W.ies");
-const activeRibbonTab = ref<RibbonTab>("home");
+const activeRibbonTab = ref<RibbonTab>("visualize");
 const activeView = ref<ViewportMode>("3d");
 const showInspector = ref(true);
+const visualizationView = ref<"3d" | "polar" | "template">("3d");
+const analysisView = ref<"zonal" | "bug" | "cu">("zonal");
+const illuminanceUnits = ref<"fc" | "lux">("fc");
+const mountingHeight = ref(8);
+const statusMessage = ref("Ready");
 const showStatusBar = ref(true);
 const showAboutModal = ref(false);
 const showEditorModal = ref(false);
@@ -67,10 +63,22 @@ const comparisonSecondaryData = ref<PhotometricData | null>(null);
 const uiScale = ref(1.0);
 const theme = ref<"dark" | "light">("dark");
 const fileInput = ref<HTMLInputElement>();
+const compareInput = ref<HTMLInputElement>();
+function chooseCompareFile(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+  void file.text().then(content => { try { comparisonSecondaryData.value = parseIES(content, file.name); } catch (error) { alert(`Could not open comparison file: ${error}`); } input.value = ""; });
+}
+function compareSample(sample: "downlight" | "roadway" | "floodlight") {
+  const samples = { downlight: [COMMERCIAL_DOWNLIGHT_IES, "Downlight.ies"], roadway: [ROADWAY_COBRA_HEAD_IES, "Roadway.ies"], floodlight: [FLOODLIGHT_NEMA_IES, "Floodlight.ies"] };
+  comparisonSecondaryData.value = parseIES(samples[sample][0], samples[sample][1]);
+}
 
 function handleLuminaireLoad(loaded: PhotometricData) {
   currentData.value = loaded;
   currentFileName.value = loaded.fileName;
+  statusMessage.value = `Loaded ${loaded.fileName}.`;
 }
 
 function handleCompareWith(other: PhotometricData) {
@@ -89,14 +97,63 @@ const ribbonToolbar = ref<InstanceType<typeof RibbonToolbar>>();
 // Switch tab and sync primary viewport
 function selectRibbonTab(tab: RibbonTab) {
   activeRibbonTab.value = tab;
-  if (tab === "3d") activeView.value = "3d";
-  else if (tab === "polar") activeView.value = "polar";
-  else if (tab === "template") activeView.value = "template";
-  else if (tab === "cu") activeView.value = "cu";
-  else if (tab === "reports") activeView.value = "reports";
-  else if (tab === "compare") activeView.value = "compare";
+  if (tab === "visualize") activeView.value = visualizationView.value;
+  else if (tab === "analysis") activeView.value = analysisView.value;
+  else if (tab === "reports" || tab === "compare") activeView.value = tab;
 }
-
+function selectView(view: "3d" | "polar" | "template") { visualizationView.value = view; activeView.value = view; }
+function selectAnalysis(view: "zonal" | "bug" | "cu") { analysisView.value = view; activeView.value = view; }
+function navigateTabs(event: KeyboardEvent) {
+  const tabs: RibbonTab[] = ["file", "visualize", "analysis", "compare", "reports"];
+  if (!(event.target instanceof HTMLElement) || event.target.getAttribute("role") !== "tab") return;
+  if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+  event.preventDefault();
+  const index = tabs.indexOf(activeRibbonTab.value);
+  const next = event.key === "Home" ? 0 : event.key === "End" ? tabs.length - 1 : (index + (event.key === "ArrowRight" ? 1 : -1) + tabs.length) % tabs.length;
+  selectRibbonTab(tabs[next]);
+  (event.currentTarget as HTMLElement).querySelectorAll<HTMLButtonElement>('[role="tab"]')[next]?.focus();
+}
+function dismissMenus(event: MouseEvent) {
+  const target = event.target as HTMLElement;
+  const clickedMenu = target.closest<HTMLDetailsElement>(".ribbon details, .display-menu");
+  const modalOpen = [showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal].some(state => state.value);
+  document.querySelectorAll<HTMLDetailsElement>(".ribbon details[open], .display-menu[open]").forEach(menu => {
+    if (menu !== clickedMenu || (target.closest("button") && !modalOpen)) {
+      const hadFocus = menu.contains(document.activeElement);
+      menu.open = false;
+      if (hadFocus) menu.querySelector<HTMLElement>("summary")?.focus();
+    }
+  });
+}
+function handleShortcuts(event: KeyboardEvent) {
+  const backdrop = document.querySelector<HTMLElement>(".modal-backdrop");
+  if (event.key === "Tab" && backdrop) {
+    const focusable = Array.from(backdrop.querySelectorAll<HTMLElement>('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'))
+      .filter(element => element.getClientRects().length > 0);
+    if (focusable.length) {
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (document.activeElement === first || !backdrop.contains(document.activeElement))) { event.preventDefault(); last.focus(); }
+      else if (!event.shiftKey && (document.activeElement === last || !backdrop.contains(document.activeElement))) { event.preventDefault(); first.focus(); }
+    }
+  }
+  if (event.key === "Escape") {
+    const modal = [showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal].find(state => state.value);
+    if (modal) { modal.value = false; event.preventDefault(); return; }
+    const menus = Array.from(document.querySelectorAll<HTMLDetailsElement>(".ribbon details[open], .display-menu[open]"));
+    if (menus.length) {
+      const menu = menus[menus.length - 1];
+      menu.open = false;
+      menu.querySelector("summary")?.focus();
+      event.preventDefault();
+      return;
+    }
+  }
+  if (!(event.ctrlKey || event.metaKey) || event.altKey) return;
+  if (backdrop && ["o", "s"].includes(event.key.toLowerCase())) { event.preventDefault(); return; }
+  if (event.key.toLowerCase() === "o") { event.preventDefault(); void openFile(); }
+  if (event.key.toLowerCase() === "s") { event.preventDefault(); void saveFile(); }
+}
 // Window actions
 async function minimizeWindow() {
   if (isTauri()) {
@@ -137,9 +194,10 @@ function toggleTheme() {
 // Load IES content
 function loadFileContent(content: string, name: string) {
   try {
-    const parsed = parseIES(content);
+    const parsed = parseIES(content, name);
     currentData.value = parsed;
     currentFileName.value = name;
+    statusMessage.value = `Loaded ${name}.`;
   } catch (err: any) {
     alert("Error parsing IES file: " + (err?.message || err));
   }
@@ -180,6 +238,7 @@ function handleFileInput(e: Event) {
     }
   };
   reader.readAsText(file);
+  target.value = "";
 }
 
 // Save file
@@ -195,7 +254,7 @@ async function saveFile() {
       });
       if (selected) {
         await invoke("save_photometric_file", { path: selected, content });
-        alert("File successfully saved!");
+        statusMessage.value = `Saved ${selected.split(/[\\/]/).pop() || currentFileName.value}.`;
       }
       return;
     } catch (err) {
@@ -213,6 +272,7 @@ async function saveFile() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  statusMessage.value = "IES download started.";
 }
 
 // Export EULUMDAT
@@ -229,13 +289,13 @@ function exportLDT() {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+  statusMessage.value = "LDT export started.";
 }
 
 // UI Scale Methods
 function setScale(scale: number) {
   uiScale.value = Math.max(0.75, Math.min(1.5, Math.round(scale * 100) / 100));
   document.documentElement.style.setProperty("--ui-scale", String(uiScale.value));
-  document.documentElement.style.setProperty("--ui-font-size", `${13 * uiScale.value}px`);
   const appEl = document.getElementById("app");
   if (appEl && "zoom" in appEl.style) {
     (appEl.style as any).zoom = String(uiScale.value);
@@ -257,6 +317,7 @@ function resetScale() {
 
 function handleEditorSave(updated: PhotometricData) {
   currentData.value = updated;
+  statusMessage.value = "Luminaire changes applied.";
 }
 
 // Load Samples
@@ -292,11 +353,11 @@ const symmetryInfo = computed(() => {
   return "Asymmetric (Full 360° Web)";
 });
 
-function copyData() {
+async function copyData() {
   if (!currentData.value) return;
   const c = currentData.value.calculated;
   const text = `Photometric Report: ${currentFileName.value}
-Catalog: ${currentData.value.keywords["[LUMCAT]"] || "Generic"}
+Catalog: ${currentData.value.keywords["LUMCAT"] || "Generic"}
 Total Luminaire Lumens: ${c.totalLuminaireLumens} lm
 Input Watts: ${currentData.value.inputWatts} W
 Efficacy (LER): ${c.efficacyLER} lm/W
@@ -305,8 +366,14 @@ BUG Rating: ${c.bugRating.fullRating}
 CIE Classification: ${c.cieClassification} (${c.cieDetails?.fluxCode || ""})
 DIN 5040: ${c.cieDetails?.din5040Class || "A40"}
 Symmetry: ${symmetryInfo.value}`;
-  navigator.clipboard.writeText(text);
-  window.alert("Photometric summary copied to clipboard!");
+  try {
+    await navigator.clipboard.writeText(text);
+    statusMessage.value = "Photometric summary copied.";
+    if (!showStatusBar.value) alert(statusMessage.value);
+  } catch (error) {
+    statusMessage.value = "Could not copy photometric summary.";
+    alert(`${statusMessage.value} ${error}`);
+  }
 }
 
 const dimensionsInfo = computed(() => {
@@ -320,8 +387,27 @@ const dimensionsInfo = computed(() => {
   return `${length.toFixed(2)} × ${width.toFixed(2)} × ${height.toFixed(2)} ${unit}`;
 });
 
+let dialogTrigger: HTMLElement | null = null;
+watch([showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal], async (states, previous) => {
+  if (states.some(Boolean) && !previous.some(Boolean)) {
+    dialogTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    await nextTick();
+    document.querySelector<HTMLElement>(".modal-backdrop button, .modal-backdrop input, .modal-backdrop select")?.focus();
+  } else if (!states.some(Boolean) && previous.some(Boolean)) {
+    await nextTick();
+    const trigger = dialogTrigger?.isConnected && dialogTrigger.getClientRects().length
+      ? dialogTrigger
+      : dialogTrigger?.closest("details")?.querySelector<HTMLElement>("summary");
+    if (trigger?.isConnected && trigger.getClientRects().length) trigger.focus();
+    else document.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]')?.focus();
+    dialogTrigger = null;
+  }
+});
+
 onMounted(async () => {
   document.documentElement.dataset.theme = theme.value;
+  window.addEventListener("keydown", handleShortcuts);
+  document.addEventListener("click", dismissMenus);
   // Initialize with commercial downlight sample
   loadSample("downlight");
 
@@ -333,6 +419,10 @@ onMounted(async () => {
       console.warn("Could not show window:", e);
     }
   }
+});
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", handleShortcuts);
+  document.removeEventListener("click", dismissMenus);
 });
 </script>
 
@@ -347,6 +437,8 @@ onMounted(async () => {
       @change="handleFileInput"
     />
 
+    <input ref="compareInput" type="file" accept=".ies,.txt" hidden @change="chooseCompareFile" />
+
     <!-- Header / Window Titlebar with Client-Side Decorations (CSD) -->
     <header class="window-titlebar" data-tauri-drag-region>
       <div class="app-branding" data-tauri-drag-region>
@@ -359,15 +451,7 @@ onMounted(async () => {
         <div class="window-actions">
           <button
             class="theme-toggle-btn"
-            :title="theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme'"
-            @click="toggleTheme"
-          >
-            <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" :size="15" />
-          </button>
-
-          <button
-            class="theme-toggle-btn"
-            title="About Open Photometric Toolbox"
+            aria-label="About Open Photometric Toolbox" title="About Open Photometric Toolbox"
             @click="showAboutModal = true"
           >
             <AppIcon name="info" :size="15" />
@@ -404,703 +488,45 @@ onMounted(async () => {
       </div>
     </header>
 
-    <!-- Primary Ribbon Tabs Navigation -->
-    <nav class="ribbon-tabs" role="tablist">
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'home' }"
-        @click="selectRibbonTab('home')"
-      >
-        Home
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === '3d' }"
-        @click="selectRibbonTab('3d')"
-      >
-        3D Web
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'polar' }"
-        @click="selectRibbonTab('polar')"
-      >
-        Polar 2D
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'template' }"
-        @click="selectRibbonTab('template')"
-      >
-        Iso Template
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'cu' }"
-        @click="selectRibbonTab('cu')"
-      >
-        CU Table
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'analysis' }"
-        @click="selectRibbonTab('analysis')"
-      >
-        Analysis
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'reports' }"
-        @click="selectRibbonTab('reports')"
-      >
-        Reports
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'compare' }"
-        @click="selectRibbonTab('compare')"
-      >
-        Compare
-      </button>
-      <button
-        role="tab"
-        :class="{ active: activeRibbonTab === 'view' }"
-        @click="selectRibbonTab('view')"
-      >
-        View
-      </button>
+    <nav class="ribbon-tabs" role="tablist" aria-label="Workspace" @keydown="navigateTabs">
+      <button v-for="tab in (['file', 'visualize', 'analysis', 'compare', 'reports'] as const)" :key="tab" role="tab" :aria-selected="activeRibbonTab === tab" :tabindex="activeRibbonTab === tab ? 0 : -1" :class="{ active: activeRibbonTab === tab }" @click="selectRibbonTab(tab)">{{ tab === 'analysis' ? 'Analyze' : tab.charAt(0).toUpperCase() + tab.slice(1) }}</button>
+      <details class="display-menu"><summary>Display</summary><div class="menu-content">
+        <label><input v-model="showInspector" type="checkbox"> Show Inspector</label>
+        <button @click="toggleTheme">Theme: {{ theme === 'dark' ? 'Dark' : 'Light' }}</button>
+        <label>UI Scale <select :value="uiScale" @change="setScale(Number(($event.target as HTMLSelectElement).value))"><option :value="1">100%</option><option :value="1.1">110%</option><option :value="1.2">120%</option><option :value="1.3">130%</option><option :value="1.5">150%</option></select></label>
+        <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
+      </div></details>
     </nav>
-
-    <!-- Ribbon Action Toolbar -->
     <RibbonToolbar ref="ribbonToolbar">
-      <!-- TAB: HOME -->
-      <template v-if="activeRibbonTab === 'home'">
-        <!-- File Operations -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button class="ribbon-action" title="Create New Luminaire Profile from Scratch (tool_newpe.exe)" @click="showNewLuminaireModal = true">
-              <AppIcon name="plus" />
-              <span class="ribbon-label">New IES</span>
-            </button>
-            <button class="ribbon-action" title="Open IES / LDT File" @click="openFile">
-              <AppIcon name="open" />
-              <span class="ribbon-label">Open File</span>
-            </button>
-            <button class="ribbon-action" title="Save IES File" @click="saveFile">
-              <AppIcon name="save" />
-              <span class="ribbon-label">Save IES</span>
-            </button>
-            <button class="ribbon-action" title="Export EULUMDAT (.ldt) File" @click="exportLDT">
-              <AppIcon name="convert" />
-              <span class="ribbon-label">Export LDT</span>
-            </button>
-            <button class="ribbon-action" title="Interactive Photometric Editor" @click="showEditorModal = true">
-              <AppIcon name="edit" />
-              <span class="ribbon-label">Edit IES</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">File</span>
-        </div>
-
-        <!-- Catalog & Conversion Tools -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              title="Search & Browse Luminaire Library Catalog (tool_openexpe.exe)"
-              @click="showCatalogModal = true"
-            >
-              <AppIcon name="database" />
-              <span class="ribbon-label">Catalog</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Convert Goniometer Coordinate Web (Type B ↔ Type C)"
-              @click="showConverterModal = true"
-            >
-              <AppIcon name="convert" />
-              <span class="ribbon-label">Convert B/C</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Catalog & Tools</span>
-        </div>
-
-        <!-- Sample Luminaires -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              title="Recessed Commercial LED Downlight"
-              @click="loadSample('downlight')"
-            >
-              <AppIcon name="lightbulb" />
-              <span class="ribbon-label">Downlight</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="LED Cobra Head Roadway Type III"
-              @click="loadSample('roadway')"
-            >
-              <AppIcon name="layers" />
-              <span class="ribbon-label">Roadway</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Architectural Outdoor Floodlight"
-              @click="loadSample('floodlight')"
-            >
-              <AppIcon name="shield" />
-              <span class="ribbon-label">Floodlight</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Samples</span>
-        </div>
-
-        <!-- Viewport Modes Quick Jump -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === '3d' }"
-              title="3D Candela Solid Distribution"
-              @click="selectRibbonTab('3d')"
-            >
-              <AppIcon name="cube" />
-              <span class="ribbon-label">3D Web</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'polar' }"
-              title="2D Polar Candela Distribution Curves"
-              @click="selectRibbonTab('polar')"
-            >
-              <AppIcon name="polar" />
-              <span class="ribbon-label">Polar 2D</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'template' }"
-              title="Iso-illuminance Footcandle/Lux Template"
-              @click="selectRibbonTab('template')"
-            >
-              <AppIcon name="template" />
-              <span class="ribbon-label">Iso Template</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'cu' }"
-              title="Coefficients of Utilization (CU) Zonal Cavity Table"
-              @click="selectRibbonTab('cu')"
-            >
-              <AppIcon name="table" />
-              <span class="ribbon-label">CU Table</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'reports' }"
-              title="Formal Luminaire Reports (Indoor, Roadway, Floodlight)"
-              @click="selectRibbonTab('reports')"
-            >
-              <AppIcon name="report" />
-              <span class="ribbon-label">Reports</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'compare' }"
-              title="Compare Luminaires Side-by-Side"
-              @click="selectRibbonTab('compare')"
-            >
-              <AppIcon name="compare" />
-              <span class="ribbon-label">Compare</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Workspace Views</span>
-        </div>
-
-        <!-- Panels -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: showInspector }"
-              title="Toggle Luminaire Metadata Inspector"
-              @click="showInspector = !showInspector"
-            >
-              <AppIcon name="edit" />
-              <span class="ribbon-label">Inspector</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Panels</span>
-        </div>
-      </template>
-
-      <!-- TAB: 3D WEB -->
-      <template v-else-if="activeRibbonTab === '3d'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: !wireframeMode }"
-              title="Smooth Candela False-Color Surface"
-              @click="wireframeMode = false; activeView = '3d'"
-            >
-              <AppIcon name="cube" />
-              <span class="ribbon-label">Solid Mesh</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: wireframeMode }"
-              title="Wireframe Mesh Representation"
-              @click="wireframeMode = true; activeView = '3d'"
-            >
-              <AppIcon name="wireframe" />
-              <span class="ribbon-label">Wireframe</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Render Mode</span>
-        </div>
-
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: show3DRings }"
-              title="Toggle Polar Reference Rings"
-              @click="show3DRings = !show3DRings"
-            >
-              <AppIcon name="polar" />
-              <span class="ribbon-label">Polar Rings</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: show3DAxes }"
-              title="Toggle 3D Coordinate Axes"
-              @click="show3DAxes = !show3DAxes"
-            >
-              <AppIcon name="layers" />
-              <span class="ribbon-label">3D Axes</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Overlays</span>
-        </div>
-
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: showInspector }"
-              title="Toggle Luminaire Metadata Inspector"
-              @click="showInspector = !showInspector"
-            >
-              <AppIcon name="edit" />
-              <span class="ribbon-label">Inspector Rail</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Display</span>
-        </div>
-      </template>
-
-      <!-- TAB: POLAR 2D / CURVES -->
-      <template v-else-if="activeRibbonTab === 'polar'">
-        <!-- Plot Style -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPlotMode === 'polar' }"
-              title="2D Polar Candela Distribution Curves"
-              @click="selectedPlotMode = 'polar'; activeView = 'polar'"
-            >
-              <AppIcon name="polar" />
-              <span class="ribbon-label">Polar 2D</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPlotMode === 'cartesian' }"
-              title="Linear Cartesian X-Y Candela Plot (Intensity vs. Vertical Angle)"
-              @click="selectedPlotMode = 'cartesian'; activeView = 'polar'"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">Cartesian X-Y</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Plot Style</span>
-        </div>
-
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPolarPlane === 'all' }"
-              title="Overlay All Measured Candela Planes"
-              @click="selectedPolarPlane = 'all'; activeView = 'polar'"
-            >
-              <AppIcon name="polar" />
-              <span class="ribbon-label">All Planes</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPolarPlane === 'max' }"
-              title="View Maximum Candela Plane"
-              @click="selectedPolarPlane = 'max'; activeView = 'polar'"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">Max Plane</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPolarPlane === '0' }"
-              title="View Transverse 0° Plane"
-              @click="selectedPolarPlane = '0'; activeView = 'polar'"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">0° Transverse</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: selectedPolarPlane === '90' }"
-              title="View Longitudinal 90° Plane"
-              @click="selectedPolarPlane = '90'; activeView = 'polar'"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">90° Long.</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Candela Planes</span>
-        </div>
-
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              title="Copy Summary Metrics"
-              @click="copyData"
-            >
-              <AppIcon name="report" />
-              <span class="ribbon-label">Copy Data</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Export EULUMDAT (.ldt) Format"
-              @click="exportLDT"
-            >
-              <AppIcon name="convert" />
-              <span class="ribbon-label">Export LDT</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Export</span>
-        </div>
-      </template>
-
-      <!-- TAB: ISO TEMPLATE -->
-      <template v-else-if="activeRibbonTab === 'template'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              title="Interactive Photometric Editor"
-              @click="showEditorModal = true"
-            >
-              <AppIcon name="edit" />
-              <span class="ribbon-label">Edit IES</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Copy Photometric Summary"
-              @click="copyData"
-            >
-              <AppIcon name="report" />
-              <span class="ribbon-label">Copy Data</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Template Tools</span>
-        </div>
-      </template>
-
-      <!-- TAB: CU TABLE -->
-      <template v-else-if="activeRibbonTab === 'cu'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action active"
-              title="Coefficients of Utilization (Zonal Cavity Method)"
-            >
-              <AppIcon name="table" />
-              <span class="ribbon-label">CU Matrix</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="CIE Luminaire Classification & Flux Codes"
-              @click="showCIEModal = true"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">CIE Class</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Indoor Zonal Cavity</span>
-        </div>
-      </template>
-
-      <!-- TAB: ANALYSIS -->
-      <template v-else-if="activeRibbonTab === 'analysis'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'zonal' }"
-              title="Simpson's Rule 1° Zonal Integration Table"
-              @click="activeView = 'zonal'"
-            >
-              <AppIcon name="calculator" />
-              <span class="ribbon-label">Simpson Zonal</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'bug' }"
-              title="IES TM-15 Backlight, Uplight, Glare Rating"
-              @click="activeView = 'bug'"
-            >
-              <AppIcon name="shield" />
-              <span class="ribbon-label">TM-15 BUG</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: activeView === 'cu' }"
-              title="Coefficients of Utilization (Zonal Cavity Method)"
-              @click="selectRibbonTab('cu')"
-            >
-              <AppIcon name="table" />
-              <span class="ribbon-label">CU Table</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="CIE Luminaire Classification & 5-Factor Flux Code"
-              @click="showCIEModal = true"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">CIE Class</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Convert Goniometer Coordinate Web (Type B ↔ Type C)"
-              @click="showConverterModal = true"
-            >
-              <AppIcon name="convert" />
-              <span class="ribbon-label">Convert B/C</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Search & Browse Luminaire Library Catalog"
-              @click="showCatalogModal = true"
-            >
-              <AppIcon name="database" />
-              <span class="ribbon-label">Catalog</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Calculations & Conversion</span>
-        </div>
-
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              title="Copy Calculated Metrics to Clipboard"
-              @click="copyData"
-            >
-              <AppIcon name="report" />
-              <span class="ribbon-label">Copy Data</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="Export EULUMDAT (.ldt) Format"
-              @click="exportLDT"
-            >
-              <AppIcon name="convert" />
-              <span class="ribbon-label">Export LDT</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Export</span>
-        </div>
-      </template>
-
-      <!-- TAB: REPORTS -->
-      <template v-else-if="activeRibbonTab === 'reports'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action active"
-              title="Indoor, Roadway, and Floodlight Formal Reports"
-              @click="activeView = 'reports'"
-            >
-              <AppIcon name="report" />
-              <span class="ribbon-label">Report View</span>
-            </button>
-            <button
-              class="ribbon-action"
-              title="CIE Luminaire Classification & Flux Codes"
-              @click="showCIEModal = true"
-            >
-              <AppIcon name="chart" />
-              <span class="ribbon-label">CIE Class</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Document</span>
-        </div>
-      </template>
-
-      <!-- TAB: COMPARE -->
-      <template v-else-if="activeRibbonTab === 'compare'">
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action active"
-              title="Compare Luminaires Side-by-Side"
-              @click="activeView = 'compare'"
-            >
-              <AppIcon name="compare" />
-              <span class="ribbon-label">Side-by-Side</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Luminaire Comparison</span>
-        </div>
-      </template>
-
-      <!-- TAB: VIEW -->
-      <template v-else-if="activeRibbonTab === 'view'">
-        <!-- UI Scaling Group -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button class="ribbon-action" title="Zoom In UI (+10%)" @click="zoomIn">
-              <AppIcon name="zoom-in" />
-              <span class="ribbon-label">Zoom In</span>
-            </button>
-            <button class="ribbon-action" title="Zoom Out UI (-10%)" @click="zoomOut">
-              <AppIcon name="zoom-out" />
-              <span class="ribbon-label">Zoom Out</span>
-            </button>
-            <button class="ribbon-action" title="Reset UI Scale to 100%" @click="resetScale">
-              <AppIcon name="reset" />
-              <span class="ribbon-label">Reset (100%)</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">UI Scale ({{ Math.round(uiScale * 100) }}%)</span>
-        </div>
-
-        <!-- Scale Presets with Dedicated Visual Icons -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: Math.abs(uiScale - 0.85) < 0.03 }"
-              title="Set Compact UI Scale (85%)"
-              @click="setScale(0.85)"
-            >
-              <AppIcon name="scale-compact" />
-              <span class="ribbon-label">Compact 85%</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: Math.abs(uiScale - 1.0) < 0.03 }"
-              title="Set Default UI Scale (100%)"
-              @click="setScale(1.0)"
-            >
-              <AppIcon name="scale-default" />
-              <span class="ribbon-label">Default 100%</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: Math.abs(uiScale - 1.15) < 0.03 }"
-              title="Set Comfortable UI Scale (115%)"
-              @click="setScale(1.15)"
-            >
-              <AppIcon name="scale-medium" />
-              <span class="ribbon-label">Medium 115%</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: Math.abs(uiScale - 1.3) < 0.03 }"
-              title="Set Large UI Scale (130%)"
-              @click="setScale(1.3)"
-            >
-              <AppIcon name="scale-large" />
-              <span class="ribbon-label">Large 130%</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Scale Presets</span>
-        </div>
-
-        <!-- Panels Visibility -->
-        <div class="ribbon-group">
-          <div class="ribbon-actions">
-            <button
-              class="ribbon-action"
-              :class="{ active: showInspector }"
-              title="Toggle Luminaire Metadata Inspector"
-              @click="showInspector = !showInspector"
-            >
-              <AppIcon name="edit" />
-              <span class="ribbon-label">Inspector Rail</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :class="{ active: showStatusBar }"
-              title="Toggle Application Status Bar"
-              @click="showStatusBar = !showStatusBar"
-            >
-              <AppIcon name="table" />
-              <span class="ribbon-label">Status Bar</span>
-            </button>
-            <button
-              class="ribbon-action"
-              :title="theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-              @click="toggleTheme"
-            >
-              <AppIcon :name="theme === 'dark' ? 'sun' : 'moon'" />
-              <span class="ribbon-label">{{ theme === 'dark' ? 'Light Theme' : 'Dark Theme' }}</span>
-            </button>
-          </div>
-          <span class="ribbon-group-title">Layout & Theming</span>
-        </div>
-      </template>
+      <div v-if="activeRibbonTab === 'file'" class="compact-commands">
+        <button @click="showNewLuminaireModal = true">New Luminaire</button><button @click="openFile">Open</button><button @click="saveFile">Save IES</button><button class="file-secondary" @click="showEditorModal = true">Edit Luminaire</button><button class="file-secondary" @click="exportLDT">Export LDT</button><button class="file-secondary" @click="showCatalogModal = true">Library</button>
+        <details class="file-more"><summary>More</summary><div class="menu-content"><button @click="showEditorModal = true">Edit Luminaire</button><button @click="exportLDT">Export LDT</button><button @click="showCatalogModal = true">Library</button></div></details>
+        <details><summary>Samples</summary><div class="menu-content"><button @click="loadSample('downlight')">Downlight</button><button @click="loadSample('roadway')">Roadway</button><button @click="loadSample('floodlight')">Floodlight</button></div></details>
+      </div>
+      <div v-else-if="activeRibbonTab === 'visualize'" class="compact-commands">
+        <label>View <select :value="visualizationView" @change="selectView(($event.target as HTMLSelectElement).value as typeof visualizationView)"><option value="3d">3D Candela Web</option><option value="polar">2D Candela Plot</option><option value="template">Iso-illuminance</option></select></label>
+        <template v-if="visualizationView === '3d'"><label>Rendering <select v-model="wireframeMode"><option :value="false">Solid</option><option :value="true">Wireframe</option></select></label><details><summary>Overlays</summary><div class="menu-content"><label><input v-model="show3DAxes" type="checkbox"> Axes</label><label><input v-model="show3DRings" type="checkbox"> Rings</label></div></details></template>
+        <template v-else-if="visualizationView === 'polar'"><label>Plot <select v-model="selectedPlotMode"><option value="polar">Polar</option><option value="cartesian">Cartesian</option></select></label><label>Plane <select v-model="selectedPolarPlane"><option value="all">All planes</option><option value="max">Max plane</option><option value="0">0° Transverse</option><option value="90">90° Longitudinal</option></select></label></template>
+        <label v-else>Illuminance Units <select v-model="illuminanceUnits"><option value="fc">Footcandles</option><option value="lux">Lux</option></select></label>
+      </div>
+      <div v-else-if="activeRibbonTab === 'analysis'" class="compact-commands">
+        <label>View <select :value="analysisView" @change="selectAnalysis(($event.target as HTMLSelectElement).value as typeof analysisView)"><option value="zonal">Zonal Lumens</option><option value="bug">BUG Rating</option><option value="cu">CU Table</option></select></label><button class="analysis-secondary" @click="showCIEModal = true">CIE Classification</button><button class="analysis-secondary" @click="copyData">Copy Photometric Summary</button><details class="analysis-more"><summary>More</summary><div class="menu-content"><button @click="showCIEModal = true">CIE Classification</button><button @click="copyData">Copy Photometric Summary</button></div></details><details><summary>Utilities</summary><div class="menu-content"><button @click="showConverterModal = true">Convert Type B/C</button></div></details>
+      </div>
+      <div v-else-if="activeRibbonTab === 'compare'" class="compact-commands"><span class="compare-filename" :title="currentFileName">A: {{ currentFileName }}</span><span class="compare-filename" :title="comparisonSecondaryData?.fileName || 'Roadway_150W.ies'">B: {{ comparisonSecondaryData?.fileName || 'Roadway_150W.ies' }}</span><details><summary>Choose Luminaire</summary><div class="menu-content"><button @click="compareInput?.click()">Open file</button><button @click="showCatalogModal = true">Library</button><button @click="compareSample('downlight')">Downlight sample</button><button @click="compareSample('roadway')">Roadway sample</button><button @click="compareSample('floodlight')">Floodlight sample</button></div></details></div>
+      <div v-else class="compact-commands"><span>Report options and export are beside the preview.</span></div>
     </RibbonToolbar>
 
-    <!-- Main Workspace Body -->
     <main class="main-body">
       <!-- Side Inspector / Metadata Rail -->
       <aside v-if="showInspector" class="side-inspector">
         <div class="inspector-header">
           <span>Luminaire Inspector</span>
-          <button class="theme-toggle-btn" title="Hide Inspector" @click="showInspector = false">
+          <button class="theme-toggle-btn" aria-label="Hide Inspector" title="Hide Inspector" @click="showInspector = false">
             <AppIcon name="close" :size="13" />
           </button>
         </div>
 
         <div class="inspector-content">
-          <!-- Luminaire Identity -->
-          <div class="data-card">
-            <div class="data-card-title">Identity & Source</div>
-            <div class="data-kv">
-              <span class="k">Catalog:</span>
-              <span class="v">{{ currentData?.keywords["[LUMCAT]"] || "Generic" }}</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Manufacturer:</span>
-              <span class="v">{{ currentData?.keywords["[MANUFAC]"] || "Lighting Analysts" }}</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Luminaire:</span>
-              <span class="v">{{ currentData?.keywords["[LUMINAIRE]"] || "Architectural Luminaire" }}</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Lamp:</span>
-              <span class="v">{{ currentData?.keywords["[LAMP]"] || "Integrated LED" }}</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Test Lab:</span>
-              <span class="v">{{ currentData?.keywords["[TESTLAB]"] || "Photometric Lab" }}</span>
-            </div>
-          </div>
-
           <!-- Photometric Characteristics -->
           <div class="data-card">
             <div class="data-card-title">Photometric Summary</div>
@@ -1120,19 +546,44 @@ onMounted(async () => {
               <span class="k">Max Intensity:</span>
               <span class="v">{{ maxCandelaInfo }}</span>
             </div>
-            <div class="data-kv" style="cursor: pointer" title="Click to view full CIE Classification & Flux Code" @click="showCIEModal = true">
+            <button class="data-kv inspector-cie" title="View CIE Classification & Flux Code" @click="showCIEModal = true">
               <span class="k">CIE Classification:</span>
               <span class="v" style="color: var(--accent); text-decoration: underline">{{ currentData?.calculated.cieClassification }} ({{ currentData?.calculated.cieDetails?.fluxCode }})</span>
-            </div>
+            </button>
             <div class="data-kv">
               <span class="k">BUG Rating (TM-15):</span>
               <span class="v">{{ currentData?.calculated.bugRating.fullRating }}</span>
             </div>
           </div>
 
+          <!-- Luminaire Identity -->
+          <details class="data-card">
+            <summary class="data-card-title">Identity & Source</summary>
+            <div class="data-kv">
+              <span class="k">Catalog:</span>
+              <span class="v">{{ currentData?.keywords["LUMCAT"] || "Generic" }}</span>
+            </div>
+            <div class="data-kv">
+              <span class="k">Manufacturer:</span>
+              <span class="v">{{ currentData?.keywords["MANUFAC"] || "Lighting Analysts" }}</span>
+            </div>
+            <div class="data-kv">
+              <span class="k">Luminaire:</span>
+              <span class="v">{{ currentData?.keywords["LUMINAIRE"] || "Architectural Luminaire" }}</span>
+            </div>
+            <div class="data-kv">
+              <span class="k">Lamp:</span>
+              <span class="v">{{ currentData?.keywords["LAMP"] || "Integrated LED" }}</span>
+            </div>
+            <div class="data-kv">
+              <span class="k">Test Lab:</span>
+              <span class="v">{{ currentData?.keywords["TESTLAB"] || "Photometric Lab" }}</span>
+            </div>
+          </details>
+
           <!-- Goniophotometer Geometry -->
-          <div class="data-card">
-            <div class="data-card-title">Goniometer & Geometry</div>
+          <details class="data-card">
+            <summary class="data-card-title">Goniometer & Geometry</summary>
             <div class="data-kv">
               <span class="k">Goniometer Type:</span>
               <span class="v">{{ currentData?.photometricType === 1 ? 'Type C' : currentData?.photometricType === 2 ? 'Type B' : 'Type A' }}</span>
@@ -1153,28 +604,9 @@ onMounted(async () => {
               <span class="k">Horizontal Planes:</span>
               <span class="v">{{ currentData?.numHorizontalAngles }} planes</span>
             </div>
-          </div>
+          </details>
 
-          <!-- Reverse-Engineered Engine Status -->
-          <div class="data-card">
-            <div class="data-card-title">Engine Specs (Reversed)</div>
-            <div class="data-kv">
-              <span class="k">Integration:</span>
-              <span class="v">Simpson's Rule 1°</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Standard:</span>
-              <span class="v">IES TM-15-11 BUG</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Decompiled DLL:</span>
-              <span class="v">LAICalcNETRev2.dll</span>
-            </div>
-            <div class="data-kv">
-              <span class="k">Legacy Host:</span>
-              <span class="v">VB6 + OLE Stream</span>
-            </div>
-          </div>
+
         </div>
       </aside>
 
@@ -1196,13 +628,14 @@ onMounted(async () => {
             :data="currentData"
             :active-plane="selectedPolarPlane"
             :initial-plot-mode="selectedPlotMode"
-            @update:active-plane="selectedPolarPlane = $event"
           />
 
           <!-- Iso-illuminance Template View -->
           <IsoIlluminanceViewer
             v-else-if="activeView === 'template'"
             :data="currentData"
+            :units="illuminanceUnits"
+            v-model:mounting-height="mountingHeight"
           />
 
           <!-- Zonal Lumens View -->
@@ -1244,23 +677,11 @@ onMounted(async () => {
     <footer v-if="showStatusBar" class="status-bar">
       <div class="status-item">
         <span class="status-badge" />
-        <span>LAICalcNETRev2 Photometric Engine Active</span>
-      </div>
-
-      <div class="status-item">
-        <span>Goniometer: {{ currentData?.photometricType === 1 ? 'Type C' : 'Type B' }}</span>
-        <span>•</span>
-        <span>Symmetry: {{ symmetryInfo }}</span>
-        <span>•</span>
-        <span>Max: {{ currentData?.calculated.maxCandela.intensity }} cd</span>
+        <span role="status" aria-live="polite">{{ currentFileName }} — {{ statusMessage }}</span>
       </div>
 
       <div class="status-item">
         <span>Scale: {{ Math.round(uiScale * 100) }}%</span>
-        <span>•</span>
-        <span>Three.js WebGL2</span>
-        <span>•</span>
-        <span>Tauri v2 + Vue 3</span>
       </div>
     </footer>
 
@@ -1304,13 +725,13 @@ onMounted(async () => {
 
     <!-- About / Information Modal -->
     <div v-if="showAboutModal" class="modal-backdrop" @click.self="showAboutModal = false">
-      <div class="modal-dialog about-modal">
+      <div class="modal-dialog about-modal" role="dialog" aria-modal="true" aria-label="About Open Photometric Toolbox">
         <div class="modal-header">
           <div class="modal-title">
             <AppIcon name="lightbulb" :size="20" />
             <span>About Open Photometric Toolbox</span>
           </div>
-          <button class="theme-toggle-btn" title="Close" @click="showAboutModal = false">
+          <button class="theme-toggle-btn" aria-label="Close" title="Close" @click="showAboutModal = false">
             <AppIcon name="close" :size="14" />
           </button>
         </div>
@@ -1334,6 +755,11 @@ onMounted(async () => {
             <p>
               Open Photometric Toolbox is a comprehensive engineering workstation for lighting designers, luminaire manufacturers, and test laboratories. It provides precision calculation, visualization, conversion, and reporting for standardized architectural, roadway, and floodlight distributions.
             </p>
+          </div>
+
+          <div class="about-section">
+            <h3>Engine details</h3>
+            <p>Simpson's rule integration at 1°; IES TM-15-11 BUG ratings. Legacy reference: LAICalcNETRev2 and VB6/OLE Stream.</p>
           </div>
 
           <div class="about-section">

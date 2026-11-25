@@ -37,7 +37,7 @@ function getCellColor(val: number): string {
         </div>
       </div>
 
-      <div class="table-scroll">
+      <div class="table-scroll" tabindex="0" role="region" aria-label="Coefficient of utilization table; scroll horizontally for additional columns">
         <table class="cu-table">
           <thead>
             <tr class="header-group-row">

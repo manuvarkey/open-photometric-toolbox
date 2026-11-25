@@ -26,7 +26,7 @@ const compareData = computed<PhotometricData | null>(() => {
 });
 
 function calcDelta(a: number, b: number): { text: string; isPositive: boolean } {
-  if (!b) return { text: "0.0%", isPositive: true };
+  if (!b) return { text: a === 0 ? "0.0%" : "—", isPositive: true };
   const delta = ((a - b) / b) * 100;
   const sign = delta > 0 ? "+" : "";
   return {
@@ -75,7 +75,10 @@ const comparisonRows = computed(() => {
       metric: "Downward Lumens %",
       valA: `${Math.round((a.downwardLumens / (a.totalLuminaireLumens || 1)) * 100)}%`,
       valB: `${Math.round((b.downwardLumens / (b.totalLuminaireLumens || 1)) * 100)}%`,
-      delta: calcDelta(a.downwardLumens, b.downwardLumens),
+      delta: calcDelta(
+        a.downwardLumens / (a.totalLuminaireLumens || 1),
+        b.downwardLumens / (b.totalLuminaireLumens || 1),
+      ),
     },
     {
       metric: "CIE Luminaire Type",
@@ -146,14 +149,6 @@ const pathB = computed(() => getCurvePath(compareData.value));
         <span class="sub-label">Side-by-side delta analysis and superimposed polar curves</span>
       </div>
 
-      <div class="selector-group">
-        <label>Compare Luminaire A with:</label>
-        <select v-model="selectedSampleB" class="sample-select">
-          <option value="roadway">Roadway Cobra Head (150W)</option>
-          <option value="downlight">Architectural Downlight (40W)</option>
-          <option value="floodlight">Outdoor Floodlight (250W)</option>
-        </select>
-      </div>
     </div>
 
     <div class="compare-body">
@@ -161,8 +156,8 @@ const pathB = computed(() => getCurvePath(compareData.value));
       <div class="polar-compare-card">
         <div class="card-title">Superimposed Polar Distribution Curves</div>
         <div class="legend-row">
-          <span class="legend-badge badge-a">● Luminaire A (Active)</span>
-          <span class="legend-badge badge-b">● Luminaire B (Target)</span>
+          <span class="legend-badge badge-a">● A: {{ primaryData?.fileName }}</span>
+          <span class="legend-badge badge-b">● B: {{ compareData?.fileName }}</span>
         </div>
 
         <div class="svg-wrap">
@@ -279,7 +274,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
 
 .compare-body {
   display: grid;
-  grid-template-columns: 380px 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 14px;
   flex: 1;
 }
@@ -292,6 +287,8 @@ const pathB = computed(() => getCurvePath(compareData.value));
   padding: 14px;
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  overflow-x: auto;
 }
 
 .card-title {

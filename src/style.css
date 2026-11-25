@@ -247,8 +247,8 @@ html, body, #app {
 .app-container {
   display: flex;
   flex-direction: column;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   background: var(--workspace);
 }
 
@@ -261,7 +261,7 @@ html, body, #app {
 
 /* Side Inspector / Metadata Rail */
 .side-inspector {
-  width: 320px;
+  width: clamp(180px, 24%, 320px);
   flex-shrink: 0;
   background: var(--panel);
   border-right: 1px solid var(--line);
@@ -328,6 +328,14 @@ html, body, #app {
 .data-kv .v {
   color: var(--text);
   font-weight: 600;
+}
+.inspector-cie {
+  width: 100%;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line-soft);
+  text-align: left;
+  cursor: pointer;
 }
 
 /* Central Viewport / Canvas */
@@ -489,6 +497,7 @@ html, body, #app {
   }
 
   .report-paper {
+    flex: none !important;
     box-shadow: none !important;
     border: none !important;
     margin: 0 !important;
@@ -500,6 +509,9 @@ html, body, #app {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+
+  #app { zoom: 1 !important; }
+  .paper-container { display: block !important; }
 
   .report-table {
     border-collapse: collapse !important;
@@ -518,4 +530,55 @@ html, body, #app {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
+}
+/* Compact workspace commands */
+.ribbon { height: auto; min-height: 48px; overflow: visible; padding: 6px 12px; }
+.compact-commands { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; min-width: 0; }
+.compact-commands label, .menu-content label { display: flex; align-items: center; gap: 6px; }
+.compact-commands button, .compact-commands select, .compact-commands summary, .display-menu summary, .menu-content button, .menu-content select { background: var(--well); color: var(--text); border: 1px solid var(--line); border-radius: var(--control-radius); padding: 6px 9px; font: inherit; cursor: pointer; }
+.ribbon-tabs { overflow: visible; }
+.display-menu { margin-left: auto; }
+details { position: relative; }
+summary { cursor: pointer; list-style: none; }
+summary::after { content: ' ▾'; }
+.menu-content { position: absolute; z-index: 100; top: 100%; right: 0; min-width: 190px; display: flex; flex-direction: column; align-items: stretch; gap: 6px; padding: 8px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 4px 12px #0004; }
+.compact-commands .menu-content { left: 0; right: auto; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: var(--focus-width) solid var(--accent) !important;
+  outline-offset: 2px;
+}
+.modal-backdrop > [role="dialog"] {
+  max-width: calc(100% - 24px) !important;
+  max-height: calc(100% - 24px) !important;
+}
+.modal-backdrop :is(.modal-body, .editor-body) {
+  min-height: 0;
+  max-height: none !important;
+  overflow: auto;
+}
+.modal-backdrop :is(.modal-header, .editor-header, .catalog-header, .modal-footer, .editor-footer, .catalog-footer) {
+  flex-shrink: 0;
+}
+.modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) { flex-wrap: wrap; }
+.modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) button {
+  min-height: 32px;
+  padding: 6px 14px;
+  border-radius: var(--control-radius);
+}
+.modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) :is(.primary, .btn-save, .modal-btn) {
+  background: var(--accent) !important;
+  color: var(--on-accent) !important;
+}
+.modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) :is(.secondary, .btn-cancel) {
+  background: var(--panel) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--text) !important;
+}
+.ribbon { container-type: inline-size; }
+.compact-commands { width: 100%; flex-wrap: nowrap; }
+.file-more, .analysis-more { display: none; }
+.compare-filename { min-width: 0; max-width: 25%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@container (max-width: 800px) {
+  .file-secondary, .analysis-secondary { display: none !important; }
+  .file-more, .analysis-more { display: block; }
 }
