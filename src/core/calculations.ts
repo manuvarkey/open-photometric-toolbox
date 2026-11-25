@@ -15,20 +15,23 @@ import { anglesFromDirection, createCandelaSampler, createFluxIntegrator, direct
 /**
  * Decompiled from LAICalcNETRev2.dll (gsbCalcCU & gfnCalcCUShort)
  * Computes Coefficients of Utilization (CU) using the IES Zonal Cavity Method.
+ * CU is normalized to rated lamp flux (emitted flux for absolute photometry).
  */
 export function computeCUTable(
   downwardZoneLumens: number[], // 9 values: 0-10, 10-20, ... 80-90
   downwardLumens: number,
   upwardLumens: number,
-  totalLumens: number,
+  lampLumens: number, // Rated lamp flux, or emitted flux for absolute photometry.
   spacingCriteria = { along0: 1.25, across90: 1.25 }
 ): CUTable {
   const floorReflectance = 0.20; // Standard 20% effective floor cavity
-  const pctDown = totalLumens > 0 ? downwardLumens / totalLumens : 1.0;
-  const pctUp = totalLumens > 0 ? upwardLumens / totalLumens : 0.0;
+  const pctDown = lampLumens > 0 ? downwardLumens / lampLumens : 0.0;
+  const pctUp = lampLumens > 0 ? upwardLumens / lampLumens : 0.0;
 
-  // IES Zonal Multiplier coefficients (A, B) for downward zones 1 to 8
+  // IES Zonal Multiplier coefficients (A, B) for all nine downward 10° zones.
+  // Zone 1 has multiplier 1; the terminal coefficient belongs to 80°–90°.
   const zonalCoeffs = [
+    { a: 0, b: 0 },
     { a: 0.041, b: 0.98 },
     { a: 0.070, b: 1.05 },
     { a: 0.100, b: 1.12 },
@@ -43,7 +46,7 @@ export function computeCUTable(
     if (rcr === 0) return 1.0;
     if (downwardLumens <= 0) return 1.0;
     let directLumens = 0;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < zonalCoeffs.length; i++) {
       const zLum = downwardZoneLumens[i] || 0;
       const k = Math.exp(-zonalCoeffs[i].a * Math.pow(rcr, zonalCoeffs[i].b));
       directLumens += zLum * k;
@@ -548,7 +551,7 @@ export function computePhotometrics(
     zoneLumens.slice(0, 9),
     downwardLumens,
     upwardLumens,
-    totalLuminaireLumens,
+    totalLampLumens,
     { along0: Math.max(0.5, Math.min(2.5, sc0)), across90: Math.max(0.5, Math.min(2.5, sc90)) }
   );
 

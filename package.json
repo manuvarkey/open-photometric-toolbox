@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc --noEmit && vite build",
-    "test": "node tests/metadata-roundtrip.mjs && node tests/core-math.mjs && node tests/ldt-format.mjs",
+    "test": "node tests/metadata-roundtrip.mjs && node tests/core-math.mjs && node tests/cu-direct-ratio.mjs && node tests/ldt-format.mjs",
     "preview": "vite preview",
     "tauri": "tauri",
     "test:ui": "node tests/ui-workflow.mjs"

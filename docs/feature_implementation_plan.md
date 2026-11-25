@@ -19,7 +19,7 @@ The requested work is one coordinated update. The [core investigation](core_modu
 | f. System UI fonts | One interface typography policy, inherited by form controls and numeric displays | Computed styles agree across tabs, ribbon, inspector, tables, dialogs, and selectors at each scale |
 | g. Report font selection | Actual installed font-family list in desktop Reports, independent report font preference | Selecting a real family changes paper, SVG labels, print/PDF, and exported HTML without changing interface fonts |
 
-All checked implementation items describe the code now present; the verification record distinguishes automated proof from outstanding platform checks. The direct-ratio item is partial: imported ratios are preserved and missing ratios rejected; generation remains unimplemented.
+All checked implementation items describe the code now present; the verification record distinguishes automated proof from outstanding platform checks. The direct-ratio item is partial: imported ratios are preserved and missing ratios rejected; generation remains unimplemented. The [follow-up investigation](direct_ratio_investigation.md) documents the corrected CU mapping and why its IES candidate is insufficient for LiTG export.
 
 Scope excludes decompiling/rebuilding legacy UI, CIBSE/EXL import, additional report templates, a catalog database, arbitrary fixture aiming controls, physical printer support, and unrelated calculations. Necessary fixes to type handling, invalid built-in fixtures, and LDT serialization are included because the requested features depend on them.
 
@@ -84,6 +84,7 @@ Dependencies: Phase 0 fixtures. This phase is the prerequisite for Type B LDT ex
 - [x] Handle same-type conversion without changing data. Unsupported Type A must never silently use Type C mathematics in analysis, plots, illuminance, conversion, or LDT export. Until its mapping is separately validated, reject those operations/import-to-analysis with an explicit unsupported-type message and preserve the existing active document. Any raw read/save path must preserve its original type and records.
 - [x] Show source/output flux and sampling resolution in the converter. For C sources with uplight outside B coverage, show the excluded component explicitly before Apply/Save; do not claim total-flux preservation or silently compensate it with brighter candela.
 - [x] Repair the invalid flood sample and generator: either generate genuine signed Type B data or correctly identify a C distribution. Keep metadata accurate and give the flood preset a validated physical beam model.
+- [x] Verify the CU direct-ratio prerequisite against the nine-zone IES mapping. Repair the missing first multiplier and omitted terminal zone, normalize relative CU to lamp flux (absolute CU to emitted flux), and return zero for zero output; isolate each zone through the black-ceiling/black-wall CU column. This does not establish LiTG equivalence for LDT export.
 - [x] Correct legacy attribution and misleading integration descriptions in the relevant comments/docs.
 
 Acceptance:

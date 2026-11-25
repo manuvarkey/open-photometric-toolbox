@@ -1,0 +1,89 @@
+{
+  "method": "Investigation only: corrected nine-zone IES exponential multipliers with RCR = 5/k; not a validated LiTG generator",
+  "zoneFlux": "Unrounded physical flux integrated over each 10-degree zone using createFluxIntegrator",
+  "source": "https://www.spx-lighting.com/telechargement/photometries_ldt_ilyad_f_tw/?tmstv=1667831848",
+  "comparisons": [
+    {
+      "luminaire": "ILYAD F TW 42\u00b0 2700K",
+      "indices": [
+        0.6,
+        0.8,
+        1,
+        1.25,
+        1.5,
+        2,
+        2.5,
+        3,
+        4,
+        5
+      ],
+      "supplied": [
+        0.57,
+        0.63,
+        0.67,
+        0.7,
+        0.73,
+        0.75,
+        0.77,
+        0.78,
+        0.8,
+        0.81
+      ],
+      "candidate": [
+        0.594841,
+        0.657225,
+        0.701954,
+        0.74306,
+        0.773826,
+        0.817116,
+        0.846276,
+        0.867299,
+        0.895601,
+        0.913774
+      ],
+      "maxAbsoluteDifference": 0.10377372239217475,
+      "sourceSha256": "c33831d0dd786646ec0d9452f259a7f468071e1dd4ae8fcbae9ce6a5d94a1a8e"
+    },
+    {
+      "luminaire": "ILYAD F TW 61\u00b0 2700K",
+      "indices": [
+        0.6,
+        0.8,
+        1,
+        1.25,
+        1.5,
+        2,
+        2.5,
+        3,
+        4,
+        5
+      ],
+      "supplied": [
+        0.55,
+        0.62,
+        0.66,
+        0.69,
+        0.72,
+        0.75,
+        0.76,
+        0.78,
+        0.8,
+        0.81
+      ],
+      "candidate": [
+        0.498928,
+        0.57716,
+        0.6341,
+        0.686597,
+        0.725771,
+        0.780434,
+        0.816813,
+        0.842772,
+        0.877334,
+        0.899279
+      ],
+      "maxAbsoluteDifference": 0.08927937842664835,
+      "sourceSha256": "21d947cd2994afe84d1b45b00469b03c495a22d696b0c2c4a5f346efefeaada3"
+    }
+  ]
+}
