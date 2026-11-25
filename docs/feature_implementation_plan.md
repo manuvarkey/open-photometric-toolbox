@@ -99,6 +99,7 @@ Acceptance:
 
 Dependencies: typed sampler/conversion and corrected integration from Phase 1. Add input dispatch once and use it in every file-entry route.
 
+- [x] Finish verifiable LDT compatibility cases: accept and preserve documented Ityp 0; refresh derived DFF/LOR and absolute normalization flux after uniform intensity or lamp-normalization edits, while preserving unchanged source metadata and shape-dependent supplied direct ratios. Reject edited LOR values outside the format range before saving. Prove parser/writer round trips and the editor path independently of unavailable LiTG generation.
 - [x] Implement strict `parseEULUMDAT` with correct fixed header records, all six luminous-area dimensions, finite and bounded counts, ordered angle arrays, all lamp-set records, conversion factor, direct ratios, and descriptive errors. Keep raw metadata where the current active model uses only the first lamp set.
 - [x] Read the full `Mc` angular grid separately from the reduced stored intensity planes. Reconstruct Isym 0–4 into physically oriented Type C data, including the C270→C0→C90 Isym 3 sequence and any required closure.
 - [x] Apply cd/klm normalization and conversion factors once. Preserve negative-count absolute photometry semantics and avoid confusing lamp lumens with luminaire lumens.

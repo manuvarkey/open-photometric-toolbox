@@ -43,7 +43,7 @@ export interface EulumdatLampSet {
 }
 
 export interface EulumdatMetadata {
-  typeIndicator: 1 | 2 | 3;
+  typeIndicator: 0 | 1 | 2 | 3;
   symmetry: 0 | 1 | 2 | 3 | 4;
   bodyDimensionsMm: [number, number, number];
   luminousArea: {

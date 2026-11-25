@@ -36,14 +36,14 @@ The PDF screenshots and raw downloaded fixtures are temporary verification artif
 | --- | ---: | ---: |
 | Sample heatmap / field + contours | 497.3 ms | cold 9.1 ms; warm median 4.0 ms |
 | Dense 181 × 73 heatmap / field + contours | 2,720.2 ms | cold 6.7 ms; warm median 5.4 ms |
-| Shell JavaScript | 835,162 bytes | approximately 336,132 bytes |
-| Shell gzip | 219,268 bytes | approximately 104,191 bytes |
+| Shell JavaScript | 835,162 bytes | approximately 336,807 bytes |
+| Shell gzip | 219,268 bytes | approximately 104,420 bytes |
 | 3D chunk | included in shell | 474,433 bytes; 120,547 gzip |
 | Chunk-size warning | present | absent; threshold unchanged |
 
 Timings are Chromium/headless software-WebGL measurements on the same machine. Before measures pixel heatmap generation; after measures field plus contour path generation, not complete paint latency. The dense benchmark retains the same grid dimensions but corrects inconsistent pole values in the old synthetic fixture. Height/unit/theme changes reuse geometry rather than building it again.
 
-Shell size falls about 60%; the default 3D view still needs both shell and 3D chunks: approximately 810.6 kB raw / 224.7 kB gzip of JavaScript. This is a small raw startup reduction and a small gzip increase compared with the old monolith, **not** a 60% total startup reduction. All optional feature JavaScript totals approximately 897 kB; only requested features are loaded. The focused contour dependency is included in the approximately 10.4 kB illuminance chunk.
+Shell size falls about 60%; the default 3D view still needs both shell and 3D chunks: approximately 811.2 kB raw / 225.0 kB gzip of JavaScript. This is a small raw startup reduction and a small gzip increase compared with the old monolith, **not** a 60% total startup reduction. All optional feature JavaScript totals approximately 897 kB; only requested features are loaded. The focused contour dependency is included in the approximately 10.4 kB illuminance chunk.
 
 ## Manufacturer interoperability provenance
 
@@ -65,6 +65,14 @@ File and Converter exports share one save service: desktop uses the native choos
 ## CU direct-ratio correction
 
 A follow-up core review found that the IES CU approximation omitted the first zone multiplier, shifted the remaining coefficients and discarded the 80°–90° contribution. All nine zones now map to their proper multipliers. Relative CU is normalized to rated lamp flux; absolute CU uses emitted flux, and zero-output data produces zero CU. `tests/cu-direct-ratio.mjs` isolates every zone through the black-ceiling/black-wall CU column at RCR 1, 5 and 10, and checks mixed flux, upward flux, relative/absolute normalization and zero output. These intentionally change affected CU/report values; flux, conversion and graph geometry are unchanged. See the [investigation and comparison evidence](direct_ratio_investigation.md).
+
+## LDT compatibility after editing
+
+The reader now accepts and preserves the `Ityp = 0` point-source indicator documented in [AGi32's EULUMDAT format reference](https://docs.agi32.com/PhotometricToolbox/Content/Open_Tool/eulumdat_file_format.htm). This is an LDT source classification, separate from the IES photometric coordinate type. Values below zero or above three remain invalid.
+
+Uniform candela scaling, multiplier changes and lamp-normalization edits refresh derived DFF/LOR metadata through a pure format-layer helper. Changed absolute photometry receives a new physical normalization flux, including relative/absolute transitions. Identity-only edits retain the supplied source metadata. Supplied direct ratios remain unchanged because these uniform edits preserve the angular distribution shape; arbitrary distribution editing is outside this helper's contract.
+
+Export rejects a light-output ratio above 100% before any save starts. Independent analytic fixture checks cover intensity, multiplier and lamp-flux edits, relative/absolute changes, immutable source metadata and parser/writer round trips. The browser editor-to-export check verifies refreshed metadata from an actual Apply action. The full eight-case UI matrix and production loading checks pass; the updated indoor PDF was rendered and inspected.
 
 ## Direct-ratio dependency clarified
 

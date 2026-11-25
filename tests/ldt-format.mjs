@@ -3,7 +3,8 @@ const { outputFiles } = await build({
   stdin: { contents: String.raw`
     import assert from 'node:assert/strict';
     import { readFileSync } from 'node:fs';
-    import { parseEULUMDAT, serializeEULUMDAT } from './src/core/eulumdatConverter';
+    import { parseEULUMDAT, serializeEULUMDAT, eulumdatAfterUniformEdit } from './src/core/eulumdatConverter';
+    import { computePhotometrics } from './src/core/calculations';
     import { parsePhotometric } from './src/core/photometricParser';
     import { convertPhotometric } from './src/core/goniometerConversion';
     import { createCandelaSampler } from './src/core/photometricSampling';
@@ -39,10 +40,32 @@ const { outputFiles } = await build({
       assert.deepEqual(ies.candela,d.candela);
     }
     const change=(s,line,value)=>{const l=s.trimEnd().split('\n');l[line-1]=String(value);return l.join('\n')+'\n'};
+    const pointNoSymmetry=parseEULUMDAT(change(source(0),2,0));assert.equal(pointNoSymmetry.eulumdat.typeIndicator,0);assert.equal(parseEULUMDAT(serializeEULUMDAT(pointNoSymmetry)).eulumdat.typeIndicator,0);
+    assert.throws(()=>parseEULUMDAT(change(source(0),2,-1)),/type indicator/);assert.throws(()=>parseEULUMDAT(change(source(0),2,4)),/type indicator/);
     let relative=source(1);relative=change(relative,24,2);relative=change(relative,27,2);relative=change(relative,29,6000);
     const scaled=parseEULUMDAT(relative);assert.equal(scaled.lampCount,2);assert.equal(scaled.lumensPerLamp,3000);close(scaled.candela[0][0],1200);close(scaled.candela[0][1],120);assert.equal(parseEULUMDAT(serializeEULUMDAT(scaled)).eulumdat.conversionFactor,2);
     const feet={...parseEULUMDAT(source(1)),unitsType:1,luminousLength:1,luminousWidth:.5,luminousHeight:.25};const feetExport=parseEULUMDAT(serializeEULUMDAT(feet));close(feetExport.luminousLength,.3048);close(feetExport.luminousWidth,.1524);close(feetExport.luminousHeight,.0762);
     let absolute=change(relative,27,-2);const a=parseEULUMDAT(absolute);assert.equal(a.lampCount,2);assert.equal(a.lumensPerLamp,-1);close(a.candela[0][0],1200);assert.equal(parseEULUMDAT(serializeEULUMDAT(a)).eulumdat.lampSets[0].lampCount,-2);
+    const edited=(original,scale=1,patch={})=>{
+      const data={...original,...patch,candela:original.candela.map(row=>row.map(cd=>cd*scale))};
+      data.calculated=computePhotometrics(data.verticalAngles,data.horizontalAngles,data.candela,data.lampCount,data.lumensPerLamp,data.multiplier,data.inputWatts,data.luminousLength,data.luminousWidth,data.luminousHeight,data.unitsType,data.photometricType);
+      data.eulumdat=eulumdatAfterUniformEdit(original,data,scale);return data;
+    };
+    const original=parseEULUMDAT(source(0));const originalMetadata=JSON.stringify(original.eulumdat);
+    const identity=edited(original,1,{keywords:{...original.keywords,LUMINAIRE:'Renamed'}});assert.equal(identity.eulumdat,original.eulumdat,'identity edits retain supplied metadata');
+    const half=edited(original,.5);const halfReopened=parseEULUMDAT(serializeEULUMDAT(half));
+    close(halfReopened.eulumdat.lightOutputRatio,(100*Math.PI-100)/10);assert.ok(halfReopened.eulumdat.lightOutputRatio<original.eulumdat.lightOutputRatio);
+    close(halfReopened.eulumdat.downwardFluxFraction,100*(100*Math.PI-150)/(100*Math.PI-100));
+    assert.deepEqual(halfReopened.eulumdat.directRatios,original.eulumdat.directRatios);
+    original.candela.forEach((row,h)=>row.forEach((cd,v)=>close(halfReopened.candela[h][v],cd*.5)));
+    const changedMultiplier=parseEULUMDAT(serializeEULUMDAT(edited(original,1,{multiplier:.5})));close(changedMultiplier.eulumdat.lightOutputRatio,(100*Math.PI-100)/10);
+    const changedLamp=edited(original,1,{lumensPerLamp:2000});const changedLampReopened=parseEULUMDAT(serializeEULUMDAT(changedLamp));assert.equal(changedLampReopened.eulumdat.lampSets[0].totalFlux,2000);close(changedLampReopened.eulumdat.lightOutputRatio,(200*Math.PI-200)/20);
+    const halfAbsolute=edited(a,.5);const halfAbsoluteReopened=parseEULUMDAT(serializeEULUMDAT(halfAbsolute));close(halfAbsoluteReopened.eulumdat.lampSets[0].totalFlux,1200*Math.PI-1920);assert.equal(halfAbsoluteReopened.eulumdat.lightOutputRatio,100);
+    a.candela.forEach((row,h)=>row.forEach((cd,v)=>close(halfAbsoluteReopened.candela[h][v],cd*.5)));
+    const absoluteSwitch=edited(original,1,{lumensPerLamp:-1});const switched=parseEULUMDAT(serializeEULUMDAT(absoluteSwitch));assert.equal(switched.eulumdat.lampSets[0].lampCount,-1);assert.equal(switched.eulumdat.lightOutputRatio,100);close(switched.eulumdat.lampSets[0].totalFlux,200*Math.PI-200);
+    const relativeSwitch=edited(a,1,{lumensPerLamp:10000});const switchedBack=parseEULUMDAT(serializeEULUMDAT(relativeSwitch));assert.equal(switchedBack.eulumdat.lampSets[0].totalFlux,20000);close(switchedBack.eulumdat.lightOutputRatio,(2400*Math.PI-3840)/200);
+    assert.throws(()=>serializeEULUMDAT(edited(original,10)),/light output ratio/);
+    assert.equal(JSON.stringify(original.eulumdat),originalMetadata,'editing must not mutate source metadata');
     const multiple=change(source(0),26,2).split('\n');multiple.splice(32,0,'3','Alternative test lamp','6000','3000 K','Ra 80','90');const multi=parseEULUMDAT(multiple.join('\n'));assert.equal(multi.inputWatts,20);assert.equal(multi.eulumdat.lampSets[1].watts,90);assert.deepEqual(parseEULUMDAT(serializeEULUMDAT(multi)).eulumdat.lampSets,multi.eulumdat.lampSets);
     const circular=parseEULUMDAT(change(source(1),17,0));assert.equal(circular.luminousLength,-.2);assert.equal(circular.luminousWidth,-.2);assert.equal(parseEULUMDAT(serializeEULUMDAT(circular)).eulumdat.luminousArea.widthMm,0);
     const nonuniform=source(0).trimEnd().split('\n');nonuniform[4]='0';nonuniform[43]='60';nonuniform[44]='200';assert.deepEqual(parseEULUMDAT(nonuniform.join('\n')).horizontalAngles,[0,60,200,270,360]);
@@ -71,4 +94,5 @@ const { outputFiles } = await build({
   `, resolveDir: process.cwd(), loader: "ts", sourcefile: "ldt-format.ts" },
   bundle: true, platform: "node", format: "esm", write: false,
 });
-await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].contents).toString("base64")}`);
+try { await import(`data:text/javascript;base64,${Buffer.from(outputFiles[0].contents).toString("base64")}`); }
+catch (error) { console.error(error.message); process.exitCode = 1; }

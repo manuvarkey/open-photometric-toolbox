@@ -3,14 +3,14 @@
   "baseCommit": "5d18755",
   "chunks": [
     {
-      "file": "BUGRatingViewer-CSX8rBkx.js",
-      "bytes": 2658,
-      "gzipBytes": 898
-    },
-    {
       "file": "BUGRatingViewer-D8RzUZHO.css",
       "bytes": 2205,
       "gzipBytes": 728
+    },
+    {
+      "file": "BUGRatingViewer-DytC7HvW.js",
+      "bytes": 2658,
+      "gzipBytes": 899
     },
     {
       "file": "CIEClassificationModal-B1ecoGMy.css",
@@ -18,9 +18,9 @@
       "gzipBytes": 1158
     },
     {
-      "file": "CIEClassificationModal-VzNIa4Qv.js",
+      "file": "CIEClassificationModal-BlBXQlRV.js",
       "bytes": 4786,
-      "gzipBytes": 1725
+      "gzipBytes": 1727
     },
     {
       "file": "CUTableViewer-99WXfucH.css",
@@ -28,9 +28,9 @@
       "gzipBytes": 716
     },
     {
-      "file": "CUTableViewer-CV01oYvr.js",
+      "file": "CUTableViewer-BiFxuzUu.js",
       "bytes": 2456,
-      "gzipBytes": 1181
+      "gzipBytes": 1183
     },
     {
       "file": "GoniometerConverterModal-C5-Kinim.css",
@@ -38,9 +38,14 @@
       "gzipBytes": 1002
     },
     {
-      "file": "GoniometerConverterModal-T0_0AlOg.js",
+      "file": "GoniometerConverterModal-DlrOersm.js",
       "bytes": 4760,
-      "gzipBytes": 1948
+      "gzipBytes": 1947
+    },
+    {
+      "file": "IsoIlluminanceViewer-Bj505jsF.js",
+      "bytes": 10409,
+      "gzipBytes": 4657
     },
     {
       "file": "IsoIlluminanceViewer-DNGjo52k.css",
@@ -48,14 +53,9 @@
       "gzipBytes": 808
     },
     {
-      "file": "IsoIlluminanceViewer-XOvp8yEp.js",
-      "bytes": 10409,
-      "gzipBytes": 4656
-    },
-    {
-      "file": "LuminaireCompare-CweB8Lx7.js",
+      "file": "LuminaireCompare-C658Q01P.js",
       "bytes": 4511,
-      "gzipBytes": 1717
+      "gzipBytes": 1718
     },
     {
       "file": "LuminaireCompare-DVUNVOcC.css",
@@ -63,19 +63,19 @@
       "gzipBytes": 868
     },
     {
-      "file": "NewLuminaireModal-BX_TwYtQ.js",
-      "bytes": 10600,
-      "gzipBytes": 3644
-    },
-    {
       "file": "NewLuminaireModal-C5L6FSxf.css",
       "bytes": 4137,
       "gzipBytes": 1119
     },
     {
-      "file": "Photometric3DViewer-CK4bekjv.js",
+      "file": "NewLuminaireModal-CP5zcNwx.js",
+      "bytes": 10600,
+      "gzipBytes": 3644
+    },
+    {
+      "file": "Photometric3DViewer-C1oqfpHf.js",
       "bytes": 474433,
-      "gzipBytes": 120545
+      "gzipBytes": 120546
     },
     {
       "file": "Photometric3DViewer-dDNOQ3tg.css",
@@ -83,12 +83,12 @@
       "gzipBytes": 639
     },
     {
-      "file": "PhotometricEditorModal-BK0x96Xf.js",
-      "bytes": 6316,
-      "gzipBytes": 1987
+      "file": "PhotometricEditorModal-BTonplDy.js",
+      "bytes": 6350,
+      "gzipBytes": 2004
     },
     {
-      "file": "PhotometricEditorModal-BuTu-WB7.css",
+      "file": "PhotometricEditorModal-DJWrWGmM.css",
       "bytes": 2309,
       "gzipBytes": 757
     },
@@ -98,12 +98,12 @@
       "gzipBytes": 1273
     },
     {
-      "file": "PhotometricLibraryCatalog-CUaM5pX-.js",
+      "file": "PhotometricLibraryCatalog-vnfJiEr8.js",
       "bytes": 6356,
-      "gzipBytes": 2555
+      "gzipBytes": 2557
     },
     {
-      "file": "Polar2DViewer-DPWbEuDQ.js",
+      "file": "Polar2DViewer-CXOzchnJ.js",
       "bytes": 8700,
       "gzipBytes": 3440
     },
@@ -113,14 +113,14 @@
       "gzipBytes": 1169
     },
     {
-      "file": "ReportViewer-BZ7XOZDO.js",
-      "bytes": 23115,
-      "gzipBytes": 6773
-    },
-    {
       "file": "ReportViewer-C9Qajyb5.css",
       "bytes": 4787,
       "gzipBytes": 1344
+    },
+    {
+      "file": "ReportViewer-p7MwGw5Z.js",
+      "bytes": 23115,
+      "gzipBytes": 6775
     },
     {
       "file": "ZonalLumensTable-BY2FgDEN.css",
@@ -128,9 +128,14 @@
       "gzipBytes": 617
     },
     {
-      "file": "ZonalLumensTable-EPG3K-Wp.js",
+      "file": "ZonalLumensTable-CTig2sHS.js",
       "bytes": 1139,
       "gzipBytes": 594
+    },
+    {
+      "file": "index-CK8pH4lP.js",
+      "bytes": 336807,
+      "gzipBytes": 104420
     },
     {
       "file": "index-KoaLT-Wf.css",
@@ -138,12 +143,7 @@
       "gzipBytes": 4419
     },
     {
-      "file": "index-i3xEC2As.js",
-      "bytes": 336132,
-      "gzipBytes": 104191
-    },
-    {
-      "file": "plotPaths-C3cveiU_.js",
+      "file": "plotPaths-DnS79qjw.js",
       "bytes": 352,
       "gzipBytes": 284
     }
@@ -161,6 +161,7 @@
     ],
     "checks": [
       "Native format dispatch and LDT re-export metadata",
+      "Editor scaling refreshes LDT output ratio without stale normalization",
       "Independent A/B LDT inputs and curves",
       "Library targets A without changing editing document",
       "Height and unit changes reuse vector geometry",
@@ -220,27 +221,27 @@
   ],
   "productionLoading": {
     "startup": [
-      "/assets/index-i3xEC2As.js",
-      "/assets/Photometric3DViewer-CK4bekjv.js"
+      "/assets/index-CK8pH4lP.js",
+      "/assets/Photometric3DViewer-C1oqfpHf.js"
     ],
     "afterIso": [
-      "/assets/index-i3xEC2As.js",
-      "/assets/Photometric3DViewer-CK4bekjv.js",
-      "/assets/IsoIlluminanceViewer-XOvp8yEp.js"
+      "/assets/index-CK8pH4lP.js",
+      "/assets/Photometric3DViewer-C1oqfpHf.js",
+      "/assets/IsoIlluminanceViewer-Bj505jsF.js"
     ],
     "afterReport": [
-      "/assets/index-i3xEC2As.js",
-      "/assets/Photometric3DViewer-CK4bekjv.js",
-      "/assets/IsoIlluminanceViewer-XOvp8yEp.js",
-      "/assets/plotPaths-C3cveiU_.js",
-      "/assets/ReportViewer-BZ7XOZDO.js"
+      "/assets/index-CK8pH4lP.js",
+      "/assets/Photometric3DViewer-C1oqfpHf.js",
+      "/assets/IsoIlluminanceViewer-Bj505jsF.js",
+      "/assets/plotPaths-DnS79qjw.js",
+      "/assets/ReportViewer-p7MwGw5Z.js"
     ],
     "bytes": {
-      "/assets/index-i3xEC2As.js": 336132,
-      "/assets/Photometric3DViewer-CK4bekjv.js": 474433,
-      "/assets/IsoIlluminanceViewer-XOvp8yEp.js": 10409,
-      "/assets/plotPaths-C3cveiU_.js": 352,
-      "/assets/ReportViewer-BZ7XOZDO.js": 23115
+      "/assets/index-CK8pH4lP.js": 336807,
+      "/assets/Photometric3DViewer-C1oqfpHf.js": 474433,
+      "/assets/IsoIlluminanceViewer-Bj505jsF.js": 10409,
+      "/assets/plotPaths-DnS79qjw.js": 352,
+      "/assets/ReportViewer-p7MwGw5Z.js": 23115
     },
     "failedChunkFeedback": true
   },
@@ -264,5 +265,13 @@
       "renderInspected": true,
       "sha256": "a3242803581de2b46f5656811db2d01a77c469db98cf6b2f66417fdf92be9ccb"
     }
+  },
+  "coreFollowup": {
+    "cuNineZones": true,
+    "cuLampNormalization": true,
+    "cuZeroOutput": true,
+    "ldtTypeIndicatorZero": true,
+    "ldtUniformEditMetadata": true,
+    "ldtAbsoluteEditNormalization": true
   }
 }

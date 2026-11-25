@@ -2,6 +2,7 @@
 import { ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import ThemedSelect from "./ThemedSelect.vue";
+import { eulumdatAfterUniformEdit } from "../core/eulumdatConverter";
 import { computePhotometrics } from "../core/calculations";
 import type { PhotometricData } from "../core/types";
 
@@ -81,6 +82,7 @@ function handleApply() {
     calculated,
   };
 
+  updatedData.eulumdat = eulumdatAfterUniformEdit(props.data, updatedData, scale);
   emit("save", updatedData);
   emit("close");
 }

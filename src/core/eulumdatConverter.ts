@@ -1,6 +1,6 @@
 import { computePhotometrics } from "./calculations";
 import { toTypeCData } from "./goniometerConversion";
-import { canonicalHorizontalAngles, createCandelaSampler } from "./photometricSampling";
+import { canonicalHorizontalAngles, createCandelaSampler, createFluxIntegrator } from "./photometricSampling";
 import type { EulumdatLampSet, EulumdatMetadata, PhotometricData } from "./types";
 
 const EPSILON = 1e-6;
@@ -56,7 +56,7 @@ export function parseEULUMDAT(content: string, fileName = "luminaire.ldt"): Phot
   const number = (field: string): number => finiteNumber(text(field), `${field} (line ${line})`);
   const nonnegative = (field: string): number => inRange(number(field), 0, Number.MAX_SAFE_INTEGER, field);
   const manufacturer = text("manufacturer");
-  const typeIndicator = whole(number("type indicator"), 1, 3, "type indicator") as 1 | 2 | 3;
+  const typeIndicator = whole(number("type indicator"), 0, 3, "type indicator") as EulumdatMetadata["typeIndicator"];
   const symmetry = whole(number("symmetry"), 0, 4, "symmetry") as EulumdatMetadata["symmetry"];
   const mc = whole(number("Mc C-plane count"), 1, MAX_ANGLES, "Mc C-plane count");
   const dc = inRange(number("C-plane spacing"), 0, 360, "C-plane spacing");
@@ -189,6 +189,32 @@ function uniformSpacing(angles: number[]): number {
   return angles.every((a, i) => i === 0 || Math.abs(a - angles[i - 1] - step) < EPSILON) ? step : 0;
 }
 
+/** Refresh derived format metadata after the editor's uniform photometric edits.
+ * Identity-only edits retain measured metadata. Direct ratios are shape-dependent
+ * and survive uniform intensity scaling; this is not for distribution changes.
+ */
+export function eulumdatAfterUniformEdit(original: PhotometricData, edited: PhotometricData, candelaScale: number): EulumdatMetadata | undefined {
+  const metadata = original.eulumdat;
+  if (!metadata) return undefined;
+  const intensityChanged = candelaScale !== 1 || original.multiplier !== edited.multiplier;
+  const normalizationChanged = original.lampCount !== edited.lampCount || original.lumensPerLamp !== edited.lumensPerLamp;
+  if (!intensityChanged && !normalizationChanged) return metadata;
+  const integrate = createFluxIntegrator(edited);
+  const total = integrate();
+  const absolute = edited.lumensPerLamp <= 0;
+  // Preserve an unchanged absolute source's declared normalization flux; a
+  // changed intensity or relative-to-absolute edit needs the new physical flux.
+  const normalization = absolute
+    ? (!intensityChanged && original.lumensPerLamp <= 0 ? metadata.lampSets[0].totalFlux : total)
+    : edited.lampCount * edited.lumensPerLamp;
+  return {
+    ...metadata,
+    downwardFluxFraction: total > 0 ? 100 * integrate(0, 90) / total : 0,
+    lightOutputRatio: absolute ? 100 : normalization > 0 ? 100 * total / normalization : 0,
+    lampSets: [{ ...metadata.lampSets[0], totalFlux: normalization }, ...metadata.lampSets.slice(1)],
+  };
+}
+
 /**
  * Deterministic standard-order export. Compact IES symmetry is expanded to a
  * complete C grid (Isym 0); truly rotational one-plane data uses Isym 1.
@@ -226,6 +252,10 @@ export function serializeEULUMDAT(source: PhotometricData): string {
     totalFlux: flux, colorTemperature: originalLamp?.colorTemperature ?? "", colorRendering: originalLamp?.colorRendering ?? "", watts: data.inputWatts,
   }, ...(metadata?.lampSets.slice(1) ?? [])];
   const total = data.calculated.totalLuminaireLumens;
+  const lightOutputRatio = metadata?.lightOutputRatio ?? (absolute ? 100 : data.calculated.efficiency);
+  if (!Number.isFinite(lightOutputRatio) || lightOutputRatio < 0 || lightOutputRatio > 100 + EPSILON) {
+    throw new Error("Cannot export EULUMDAT: light output ratio must be between 0% and 100%. Check the lamp lumens and intensity scale.");
+  }
   const lines: string[] = [
     oneLine(data.keywords.MANUFAC ?? ""), String(metadata?.typeIndicator ?? (rotational ? 1 : 3)), String(rotational ? 1 : 0),
     String(horizontalAngles.length), formatNumber(uniformSpacing(horizontalAngles)), String(data.verticalAngles.length), formatNumber(uniformSpacing(data.verticalAngles)),
@@ -233,7 +263,7 @@ export function serializeEULUMDAT(source: PhotometricData): string {
     oneLine(data.fileName.replace(/\.(?:ies|ldt|txt)$/i, "") + ".ldt"), oneLine(data.keywords.DATE ?? metadata?.dateUser ?? ""),
     ...body.map(formatNumber), formatNumber(areaLength), formatNumber(areaWidth), ...areaHeights.map(formatNumber),
     formatNumber(metadata?.downwardFluxFraction ?? (total > 0 ? 100 * data.calculated.downwardLumens / total : 0)),
-    formatNumber(metadata?.lightOutputRatio ?? (absolute ? 100 : data.calculated.efficiency)), formatNumber(conversionFactor), formatNumber(metadata?.measurementTilt ?? 0), String(lampSets.length),
+    formatNumber(Math.min(100, lightOutputRatio)), formatNumber(conversionFactor), formatNumber(metadata?.measurementTilt ?? 0), String(lampSets.length),
   ];
   for (const lamp of lampSets) lines.push(String(lamp.lampCount), oneLine(lamp.lampType), formatNumber(lamp.totalFlux), oneLine(lamp.colorTemperature), oneLine(lamp.colorRendering), formatNumber(lamp.watts));
   lines.push(...ratios.map(formatNumber), ...horizontalAngles.map(formatNumber), ...data.verticalAngles.map(formatNumber));
