@@ -54,9 +54,9 @@ async function downloadHtmlReport() {
     .section-title { font-weight: bold; font-size: 12px; color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
     .polar-svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
     .doc-header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; }
-    .doc-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+    .doc-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
     .doc-subtitle, .polar-caption { color: #64748b; }
-    .report-stamp { background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: 10px; }
+    .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: 10px; }
     .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
     .meta-col { display: flex; flex-direction: column; gap: 2px; }
     .polar-summary-section { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 14px; }
@@ -529,6 +529,7 @@ const polarSvgPath = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
@@ -546,6 +547,7 @@ const polarSvgPath = computed(() => {
 }
 
 .report-stamp {
+  white-space: nowrap;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.05em;

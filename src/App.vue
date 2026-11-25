@@ -209,7 +209,7 @@ async function openFile() {
     try {
       const selected = await open({
         multiple: false,
-        filters: [{ name: "Photometric Files", extensions: ["ies", "ldt", "txt"] }],
+        filters: [{ name: "IES Photometric Files", extensions: ["ies", "txt"] }],
       });
       if (selected && typeof selected === "string") {
         const content = await invoke<string>("read_photometric_file", { path: selected });
@@ -432,7 +432,7 @@ onBeforeUnmount(() => {
     <input
       ref="fileInput"
       type="file"
-      accept=".ies,.ldt,.txt"
+      accept=".ies,.txt"
       style="display: none"
       @change="handleFileInput"
     />
@@ -809,7 +809,7 @@ onBeforeUnmount(() => {
                 <AppIcon name="report" :size="18" />
                 <div>
                   <strong>Standard Formats & Reporting</strong>
-                  <span>Bidirectional IES LM-63 and European EULUMDAT (.ldt) support with exportable print-isolated PDF and standalone HTML photometric reports.</span>
+                  <span>IES LM-63 import and export, European EULUMDAT (.ldt) export, print-isolated PDF output, and standalone HTML photometric reports.</span>
                 </div>
               </div>
             </div>

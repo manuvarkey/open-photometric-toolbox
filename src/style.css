@@ -453,6 +453,10 @@ html, body, #app {
 
 /* Global Print Styles (Print to PDF / Printer without Application Shell UI) */
 @media print {
+  :root {
+    color-scheme: light !important;
+  }
+
   @page {
     margin: 10mm;
     size: auto;
@@ -560,10 +564,48 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   flex-shrink: 0;
 }
 .modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) { flex-wrap: wrap; }
+.modal-backdrop :is(.modal-header, .editor-header, .catalog-header) {
+  padding: 12px 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+  background: var(--well);
+}
+.modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) {
+  padding: 12px 16px;
+  gap: 8px;
+  border-top: 1px solid var(--line);
+  background: var(--well);
+}
 .modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   min-height: 32px;
   padding: 6px 14px;
+  border: 1px solid transparent;
   border-radius: var(--control-radius);
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.modal-backdrop :is(.icon-button, .theme-toggle-btn) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  padding: 4px;
+  border: 1px solid transparent;
+  border-radius: var(--control-radius);
+  background: transparent;
+  color: var(--muted);
+}
+.modal-backdrop :is(.icon-button, .theme-toggle-btn):hover {
+  background: var(--raised);
+  color: var(--text);
 }
 .modal-backdrop :is(.modal-footer, .editor-footer, .catalog-footer) :is(.primary, .btn-save, .modal-btn) {
   background: var(--accent) !important;

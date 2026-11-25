@@ -230,7 +230,7 @@ function handleCreate() {
       <div class="modal-header">
         <div class="modal-title">
           <AppIcon name="lightbulb" :size="20" />
-          <span>New Luminaire Profile Generator (tool_newpe.exe)</span>
+          <span>New Luminaire</span>
         </div>
         <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
           <AppIcon name="close" :size="16" />

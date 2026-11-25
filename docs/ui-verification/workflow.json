@@ -1,0 +1,21 @@
+{
+  "viewport": "900x600",
+  "scale": "130%",
+  "checks": [
+    "Ctrl+O opens IES; automation supplies file at native chooser boundary",
+    "Ctrl+S downloads an IES preserving candela",
+    "Keyboard selects Cartesian, 90-degree plane, and CU Table",
+    "Keyboard chooses comparison B sample",
+    "Keyboard reaches and invokes browser print",
+    "All three report types produce print PDFs and self-contained HTML",
+    "Plot settings persist and both modes render all four plane selections",
+    "Illuminance units preserve physical mounting height and update legend",
+    "New, Edit Apply, Save IES, and LDT export preserve edited metadata",
+    "Converter saves parseable Type B IES and applies result; numerical accuracy remains a known separate issue",
+    "Comparison B updates successively from file, library, and sample",
+    "Library imports, searches, and loads an IES",
+    "BUG, CIE, and clipboard summary operate"
+  ],
+  "errors": [],
+  "nativeBoundary": "File chooser selection supplied by Playwright; PDF created by Chromium print renderer, not the desktop Save As dialog."
+}

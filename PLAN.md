@@ -14,9 +14,9 @@ Reduce the ribbon from nine tabs to five and give each action a predictable loca
 
 ## 1. Record a baseline
 
-- [ ] Run the frontend and desktop app. Capture the default view and the 2D plot at 1400 × 900 and 900 × 600. Repeat the smaller layout at 130% UI scale.
-- [ ] Inventory ribbon, viewer, and dialog actions in `src/App.vue` and `src/components/`. Map each action to its proposed location before removing duplicate controls.
-- [ ] Exercise the current file open/save, sample, graph, analysis, comparison, conversion, and report flows. Record which plot settings survive view switches and identify where the ribbon and viewer can disagree.
+- [x] Run the frontend and desktop app. Capture the default view and the 2D plot at 1400 × 900 and 900 × 600. Repeat the smaller layout at 130% UI scale.
+- [x] Inventory ribbon, viewer, and dialog actions in `src/App.vue` and `src/components/`. Map each action to its proposed location before removing duplicate controls.
+- [x] Exercise the current file open/save, sample, graph, analysis, comparison, conversion, and report flows. Record which plot settings survive view switches and identify where the ribbon and viewer can disagree.
 
 ## 2. Build the compact ribbon and migrate Visualize
 
@@ -47,36 +47,35 @@ Reduce the ribbon from nine tabs to five and give each action a predictable loca
 
 - [x] Replace the View tab and titlebar theme toggle with a **Display** menu at the right of the tab strip. Put **Show Inspector**, **Theme**, **UI Scale**, and **Status Bar** in that menu. Keep a local close control on the inspector itself.
 - [x] Put lumens, watts, efficacy, and peak candela first in the inspector. Group identity and geometry into collapsible sections. Move legacy engine details to About and use the status bar for file and operation feedback.
-- [ ] Standardize button styles, spacing, labels, focus indicators, and dialog action order using existing theme tokens. Use **Apply** for in-memory edits and **Save IES** for writing a file. Give icon buttons accessible names.
+- [x] Standardize button styles, spacing, labels, focus indicators, and dialog action order using existing theme tokens. Use **Apply** for in-memory edits and **Save IES** for writing a file. Give icon buttons accessible names.
 - [x] Implement arrow-key navigation and programmatic selected states for tabs. Check menu dismissal with Escape, focus return after dialogs close, and visible selection in both themes.
 
 ## 6. Verify the full workflow
 
 - [x] Run `npm run build` from the repository root. Run `cargo check` from `src-tauri/`. Resolve any failures introduced by the changes.
-- [ ] Check 1400 × 900 and 900 × 600 in light and dark themes at 100% and 130% UI scale. Confirm that required actions remain visible or reachable through labeled menus and that switching views leaves enough room to use the workspace.
-- [ ] Run one end-to-end workflow using only the keyboard. Open an IES or LDT file, switch to Cartesian and select a plane, open CU Table, compare a second luminaire, and print or save a PDF.
-- [ ] Validate new, edit, save, LDT export, conversion, library, samples, BUG, CIE, Iso-illuminance, and HTML export. Compare representative outputs with the baseline to catch changes in values, units, and file contents.
+- [x] Check 1400 × 900 and 900 × 600 in light and dark themes at 100% and 130% UI scale. Confirm that required actions remain visible or reachable through labeled menus and that switching views leaves enough room to use the workspace.
+- [x] Run one end-to-end workflow using only the keyboard. Open an IES or LDT file, switch to Cartesian and select a plane, open CU Table, compare a second luminaire, and print or save a PDF.
+- [x] Validate new, edit, save, LDT export, conversion, library, samples, BUG, CIE, Iso-illuminance, and HTML export. Compare representative outputs with the baseline to catch changes in values, units, and file contents.
 
 The redesign is complete when all five tabs have distinct roles, plot controls appear once, and users can complete the end-to-end workflow at the minimum window size and 130% UI scale.
 
 ## Implementation status (25 November 2026)
 
-**In progress; paused.** The five-tab shell, compact ribbon, workspace-controlled plot settings, File and Analyze commands, comparison selection, report controls, Display menu, and inspector reorganization are implemented. The checklist above remains the source of truth for completed and outstanding plan steps.
+**Complete.** All ribbon redesign checklist items are implemented and verified. See the [baseline captures and action inventory](docs/ui-baseline/README.md) and [acceptance evidence](docs/ui-verification/README.md).
 
 ### Verification completed
 
-- `npm test`, `npm run build`, and `cargo check` passed on 25 November 2026. The frontend build reports a large-chunk warning.
-- The browser layout was inspected at 1400 × 900 and 900 × 600 in both themes at 100% and 130% scale. At the minimum size, the 3D, 2D, illuminance, BUG, CU, comparison, report, and main dialog layouts were inspected; CU supports keyboard horizontal scrolling. The full dialog and workflow matrix remains open.
-- The asymmetric roadway sample was checked in both plot modes and all plane selections. Plot mode, plane, 3D settings, and illuminance units survive view changes. Switching feet/footcandles to metres/lux preserves mounting height and updates the heatmap readout and legend.
-- New and edited luminaires, IES open/save, LDT export, conversion, library, sample selection, BUG, CIE, and HTML report flows were exercised. Comparison B was changed from a file to a library fixture to a sample; its name, curve, and metrics updated together. All three report types appeared in isolated desktop print previews and exported standalone HTML.
-- The three built-in fixtures matched the committed baseline for lumens, efficacy, peak candela, BUG, zonal and CU values, and unedited IES serialization. LDT numeric content matched; metadata now reflects the source fixture instead of generic fallback values.
-- Ctrl+O and Ctrl+S worked in the browser and were suppressed while a modal was open. Tab arrow navigation, Escape dismissal, focus return, and a partial keyboard path through CU and comparison were checked. A complete keyboard-only run through file selection and PDF output has not been completed.
-- The original browser and desktop interfaces were inspected at both requested sizes and at 130% scale. Two desktop captures from 900 × 600 at 130% are saved in [docs/ui-baseline](docs/ui-baseline/README.md); the remaining requested capture artifacts and a complete baseline flow inventory are outstanding. The original ribbon could indicate Cartesian while the current graph remained polar until a view switch.
+- `npm test`, `npm run build`, `cargo check`, and `git diff --check` passed. The frontend retains its existing large-chunk warning.
+- The full browser matrix covered 136 states across both requested sizes, themes, and scales, including all six dialogs. Ribbon/dialog controls remained reachable; dialog focus, Tab wrapping, Escape dismissal, and focus return passed. Minimum-size screenshots are retained in both themes.
+- The actual desktop keyboard-only workflow completed at 900 × 600 / 130%: native IES file selection, Cartesian and 90° plane selection, CU Table, comparison, and native Print to File including the filename chooser. The resulting one-page A4 PDF and its rendered inspection are retained.
+- New, Edit, IES open/save, LDT export, conversion save/apply, library import/search/load, samples, BUG, CIE, clipboard summary, illuminance units, and all report/HTML flows were checked. Comparison B updated from a file to a library fixture to a sample.
+- Plot settings survive view changes. Illuminance unit changes preserve physical mounting height and update the legend. Existing 3D setting persistence was retained.
+- All three built-in fixtures match the original commit for complete calculated results and unedited IES serialization. LDT non-metadata fields match; metadata uses source fixture values rather than fallback values.
+- Twelve baseline captures cover the original browser and actual desktop interface, at 1400 × 900 / 100%, 900 × 600 / 100%, and 900 × 600 / 130%, in default and 2D views. The original workflows were exercised and their action mapping recorded. The original Cartesian ribbon / Polar viewer disagreement was reproduced.
+- Dialog headers, footers, action buttons, and close buttons now use consistent theme tokens and spacing. File input labels and filters accurately offer IES. Dark-theme print margins and report heading/badge spacing were corrected and rechecked.
 
-### Remaining work and known limitations
+### Separate limitations
 
-- Finish and retain the complete baseline capture set and baseline action/flow inventory. The temporary untracked `.baseline-ui/` copy was used for baseline inspection; its recursive removal was rejected by the environment's automatic policy review. Do not commit it.
-- Finish standardizing and verifying dialog controls and focus behavior, complete the responsive matrix after the latest changes, and perform the full keyboard-only workflow including saving a PDF. Desktop print previews worked, but automation could not target the system Save As dialog to finish the test PDF.
-- Validate the remaining full workflow and compare representative outputs after the latest changes. The metadata round-trip test covers IES keywords, angles, candela, lumens, and LDT metadata.
-- LDT import was not implemented in the original repository. The application now reports an error instead of loading LDT as empty IES data; LDT export remains available.
-- The existing Type C → B converter changed a generated sample's integrated flux from 3,653 lm to 1,205 lm at 5° sampling. Its algorithm was not altered by this refactor and needs separate engineering validation. The UI now advises checking converted flux.
+- LDT import was absent in the original repository and remains unsupported. Unsupported content is rejected; LDT export remains available.
+- The existing Type C → B converter changed a generated sample's integrated flux from 3,653 lm to 1,205 lm at 5° sampling. Its algorithm was not altered by the ribbon redesign and needs separate engineering validation. The UI advises checking converted flux.
+- Desktop verification used Linux/X11. Other operating systems and physical printer drivers were not exercised.

@@ -1,0 +1,2341 @@
+{
+  "results": [
+    {
+      "config": "1400x900-dark-100",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 310,
+        "y": 158,
+        "width": 780,
+        "height": 583
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 360,
+        "y": 127,
+        "width": 680,
+        "height": 646
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 250,
+        "y": 68,
+        "width": 900,
+        "height": 765
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 400,
+        "y": 181,
+        "width": 600,
+        "height": 537
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 380,
+        "y": 218,
+        "width": 640,
+        "height": 465
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-100",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 350,
+        "y": 103,
+        "width": 700,
+        "height": 693
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 193,
+        "y": 72,
+        "width": 1014,
+        "height": 757
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 258,
+        "y": 27,
+        "width": 884,
+        "height": 846
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 115,
+        "y": 16,
+        "width": 1170,
+        "height": 869
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 310,
+        "y": 104,
+        "width": 780,
+        "height": 692
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 284,
+        "y": 150,
+        "width": 832,
+        "height": 600
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-dark-130",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 245,
+        "y": 16,
+        "width": 910,
+        "height": 869
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 310,
+        "y": 158,
+        "width": 780,
+        "height": 583
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 360,
+        "y": 127,
+        "width": 680,
+        "height": 646
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 250,
+        "y": 68,
+        "width": 900,
+        "height": 765
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 400,
+        "y": 181,
+        "width": 600,
+        "height": 537
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 380,
+        "y": 218,
+        "width": 640,
+        "height": 465
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-100",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 350,
+        "y": 103,
+        "width": 700,
+        "height": 693
+      },
+      "workspace": {
+        "x": 320,
+        "y": 116,
+        "width": 1080,
+        "height": 760
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 193,
+        "y": 72,
+        "width": 1014,
+        "height": 757
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 258,
+        "y": 27,
+        "width": 884,
+        "height": 846
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 115,
+        "y": 16,
+        "width": 1170,
+        "height": 869
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 310,
+        "y": 104,
+        "width": 780,
+        "height": 692
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 284,
+        "y": 150,
+        "width": 832,
+        "height": 600
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "1400x900-light-130",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 245,
+        "y": 16,
+        "width": 910,
+        "height": 869
+      },
+      "workspace": {
+        "x": 336,
+        "y": 151,
+        "width": 1064,
+        "height": 718
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 60,
+        "y": 12,
+        "width": 780,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 110,
+        "y": 12,
+        "width": 680,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 12,
+        "y": 45,
+        "width": 876,
+        "height": 510
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 150,
+        "y": 31,
+        "width": 600,
+        "height": 537
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 130,
+        "y": 68,
+        "width": 640,
+        "height": 465
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-100",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 100,
+        "y": 12,
+        "width": 700,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 60,
+        "y": 16,
+        "width": 780,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 34,
+        "y": 16,
+        "width": 832,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-dark-130",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 60,
+        "y": 12,
+        "width": 780,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 110,
+        "y": 12,
+        "width": 680,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 12,
+        "y": 45,
+        "width": 876,
+        "height": 510
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 150,
+        "y": 31,
+        "width": 600,
+        "height": 537
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 130,
+        "y": 68,
+        "width": 640,
+        "height": 465
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-100",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 100,
+        "y": 12,
+        "width": 700,
+        "height": 576
+      },
+      "workspace": {
+        "x": 216,
+        "y": 116,
+        "width": 684,
+        "height": 460
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "3d",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "polar",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "cartesian",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "illuminance",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "zonal",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "bug",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "cu",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "compare",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "report-indoor",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "report-roadway",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "report-floodlight",
+      "outside": [],
+      "unnamed": [],
+      "dialog": null,
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "new",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "edit",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "library",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "cie",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 60,
+        "y": 16,
+        "width": 780,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "converter",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 34,
+        "y": 16,
+        "width": 832,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    },
+    {
+      "config": "900x600-light-130",
+      "view": "about",
+      "outside": [],
+      "unnamed": [],
+      "dialog": {
+        "x": 16,
+        "y": 16,
+        "width": 869,
+        "height": 569
+      },
+      "workspace": {
+        "x": 234,
+        "y": 151,
+        "width": 666,
+        "height": 418
+      },
+      "documentOverflow": false,
+      "focusTrapped": true,
+      "wrapsBackward": true,
+      "wrapsForward": true,
+      "restored": true
+    }
+  ],
+  "errors": []
+}

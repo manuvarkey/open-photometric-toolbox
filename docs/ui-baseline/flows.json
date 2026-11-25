@@ -1,0 +1,14 @@
+{
+  "commit": "5d321c9",
+  "checks": [
+    "Original IES open/save and LDT export operated",
+    "Original three sample actions operated",
+    "Reproduced original ribbon Cartesian / viewer Polar mismatch",
+    "Exercised original viewer mode controls and view remount",
+    "Original BUG, CIE, and CU routes operated",
+    "Original sample and library comparison routes operated",
+    "Original New and Edit flows operated",
+    "Original converter save/apply flow operated",
+    "Original three report types and HTML exports operated"
+  ]
+}

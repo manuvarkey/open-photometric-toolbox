@@ -1,0 +1,20 @@
+[
+  {
+    "fixture": "COMMERCIAL_DOWNLIGHT_IES",
+    "calculationsMatch": true,
+    "iesMatches": true,
+    "ldtNumericMatches": true
+  },
+  {
+    "fixture": "FLOODLIGHT_NEMA_IES",
+    "calculationsMatch": true,
+    "iesMatches": true,
+    "ldtNumericMatches": true
+  },
+  {
+    "fixture": "ROADWAY_COBRA_HEAD_IES",
+    "calculationsMatch": true,
+    "iesMatches": true,
+    "ldtNumericMatches": true
+  }
+]

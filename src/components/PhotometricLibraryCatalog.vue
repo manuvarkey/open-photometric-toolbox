@@ -154,19 +154,19 @@ function getThumbnailPath(d: PhotometricData): string {
       <div class="catalog-header">
         <div class="header-branding">
           <AppIcon name="database" :size="20" />
-          <span>Photometric Library & Search Catalog (tool_openexpe.exe)</span>
+          <span>Photometric Library</span>
           <span class="count-badge">{{ filteredCatalog.length }} luminaires</span>
         </div>
         <div class="header-actions">
           <button class="button secondary" @click="fileInput?.click()">
             <AppIcon name="open" :size="14" />
-            <span>Import IES / LDT Files</span>
+            <span>Import IES Files</span>
           </button>
           <input
             ref="fileInput"
             type="file"
             multiple
-            accept=".ies,.ldt,.txt"
+            accept=".ies,.txt"
             style="display: none"
             @change="handleImportFiles"
           />
@@ -305,7 +305,7 @@ function getThumbnailPath(d: PhotometricData): string {
 
       <!-- Footer -->
       <div class="catalog-footer">
-        <span class="footer-note">Access Jet 3.5 catalog emulation • Instant client-side indexing</span>
+        <span class="footer-note">Load or compare a luminaire from your library.</span>
         <button class="button secondary" @click="emit('close')">Close</button>
       </div>
     </div>
