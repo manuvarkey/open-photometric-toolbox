@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
+import PlotZoomControls from "./PlotZoomControls.vue";
+import { useSvgViewport } from "../composables/useSvgViewport";
 import type { PhotometricData } from "../core/types";
 import { illuminanceField } from "../composables/illuminanceCache";
 const props = defineProps<{ data: PhotometricData | null; units: "fc" | "lux" }>();
@@ -8,14 +10,16 @@ const field = computed(() => props.data ? illuminanceField(props.data) : null);
 const height = computed(() => Math.max(.01, Number(mountingHeight.value) || .01));
 const maximum = computed(() => (field.value?.maximum ?? 0) / height.value ** 2);
 const hoveredPoint = ref<{x:number;y:number;val:number} | null>(null);
+const { svg, zoom, viewBox, isPanning, point: eventPoint, wheel, pointerDown, pointerMove, pointerUp, fit, zoomIn, zoomOut } = useSvgViewport(computed(() => ({width:600,height:600})));
+function beginPan(event: PointerEvent) { leave(); pointerDown(event); }
 const colors = ['#283e83','#285ca0','#167fbd','#149eac','#259b79','#83b736','#e8cb36','#ef9430','#dc4c3a'];
 let frame = 0;
 let pending: {x:number;y:number} | null = null;
 function handlePointer(event: PointerEvent) {
-  const svg = event.currentTarget as SVGSVGElement;
-  const matrix = svg.getScreenCTM();
-  if (!matrix) return;
-  const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+  pointerMove(event);
+  if (isPanning.value) return;
+  const point = eventPoint(event);
+  if (!point || point.x < 0 || point.x > 600 || point.y < 0 || point.y > 600) { leave(); return; }
   pending = { x: (point.x - 300) / (600 / 9), y: (300 - point.y) / (600 / 9) };
   if (frame) return;
   frame = requestAnimationFrame(() => {
@@ -35,6 +39,7 @@ onBeforeUnmount(leave);
 <template>
   <div class="template-viewer-container">
     <div class="template-toolbar">
+      <PlotZoomControls :zoom="zoom" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit="fit" />
       <div class="control-group"><label for="iso-field-1">Mounting Height (MH):</label>
         <input id="iso-field-1" v-model.number="mountingHeight" type="number" min="0.01" max="1000" step="0.1" class="mh-input" />
         <span class="unit-tag">{{ units === 'fc' ? 'ft' : 'm' }}</span>
@@ -43,7 +48,7 @@ onBeforeUnmount(leave);
       <div v-if="hoveredPoint" class="stat-badge cursor-badge">Cursor: <strong>{{ hoveredPoint.x.toFixed(1) }}MH, {{ hoveredPoint.y.toFixed(1) }}MH · {{ hoveredPoint.val.toFixed(2) }} {{ units }}</strong></div>
     </div>
     <div class="canvas-wrap">
-      <svg viewBox="0 0 600 600" class="template-svg" role="img" aria-label="Vector iso-illuminance contours in mounting-height coordinates" @pointermove="handlePointer" @pointerleave="leave">
+      <svg ref="svg" :viewBox="viewBox" class="template-svg" :class="{grabbing:isPanning}" role="img" aria-label="Vector iso-illuminance contours in mounting-height coordinates" @wheel.prevent="wheel" @pointerdown="beginPan" @pointermove="handlePointer" @pointerleave="leave" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp">
         <defs><clipPath id="illuminance-clip"><rect width="600" height="600" /></clipPath></defs>
         <rect width="600" height="600" fill="var(--graph-bg)" />
         <g clip-path="url(#illuminance-clip)">
@@ -171,12 +176,13 @@ onBeforeUnmount(leave);
 }
 
 .template-svg {
-  width: min(100cqw, 100cqh, 600px);
-  height: auto;
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
   border-radius: 4px;
-  cursor: crosshair;
+  cursor: grab;
 }
+.template-svg.grabbing { cursor: grabbing; }
 
 .legend-card {
   position: absolute;

@@ -20,7 +20,7 @@ Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides a native de
 - **Precision 2D Distribution Graphs**:
   - High-precision SVG Polar curves (Max candela plane, $0^\circ$ transverse, $90^\circ$ longitudinal).
   - Linear Cartesian X-Y Candela distribution plots with interactive tracking crosshairs and coordinate tooltips.
-  - Cached SVG iso-illuminance contours; mounting height and units reuse field geometry.
+  - Cached SVG iso-illuminance contours with wheel zoom, drag-to-pan and Fit; mounting height and units reuse field geometry.
   - Interactive mouse wheel zoom ($0.4\times$ to $5.0\times$) and drag-to-pan capabilities.
 - **Zonal Lumens & TM-15 BUG Ratings**:
   - Simpson's $1/3$ numerical quadrature for zonal flux distribution across 18 spherical zones ($0^\circ - 180^\circ$).
@@ -44,6 +44,7 @@ Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides a native de
   - Isolated print-to-PDF generation free of application UI elements.
   - Searchable installed font-family selection in the desktop app, applied to paper, PDF, and HTML. HTML recipients need the selected local font; fonts are not embedded in HTML. Browser builds offer explicit font discovery when Local Font Access is available.
 - **Native Desktop Integration**:
+  - Desktop UI typography from GTK/Pango on Linux and the WebView menu font elsewhere, with grouped ribbon commands.
   - Client-Side Decorations (CSD) with compositor shadows, window dragging, and instant dark/light high-contrast theme switching.
 
 ---

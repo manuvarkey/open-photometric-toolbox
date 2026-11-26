@@ -55,7 +55,7 @@ try{
  const longMetadata=(await fs.readFile('tests/fixtures/ldt/symmetry-3.ldt','utf8')).replace('Test LED','Luminaire_Manufacturer_Model_'.repeat(8));
  await p.locator('input[type=file]').first().setInputFiles({name:'long-metadata.ldt',mimeType:'text/plain',buffer:Buffer.from(longMetadata)});await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('long-metadata.ldt'));
  const columns=await p.locator('.report-paper .meta-col').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().width));assert.ok(Math.max(...columns)-Math.min(...columns)<2,'Long identifiers must not collapse metadata columns');checks.push('Long report metadata wraps within equal columns');
- const uiFont=await p.locator('.ribbon-tabs > button').first().evaluate(el=>getComputedStyle(el).fontFamily);assert.equal(uiFont,'system-ui');checks.push('Report font reaches all three HTML/PDF outputs without changing UI fonts');
+ const uiFont=await p.locator('.ribbon-tabs > button').first().evaluate(el=>getComputedStyle(el).fontFamily);assert.equal(uiFont,await p.locator('html').evaluate(el=>getComputedStyle(el).fontFamily));checks.push('Report font reaches all three HTML/PDF outputs without changing UI fonts');
  await p.getByRole('tab',{name:'Visualize',exact:true}).click();await p.getByRole('tab',{name:'Reports',exact:true}).click();assert.match(await p.getByRole('combobox',{name:'Report Font',exact:true}).innerText(),/DejaVu Serif/);checks.push('Report settings persist across view changes');
  // Exercise preset generation through its real UI, including signed Type B output.
  await p.getByRole('tab',{name:'File',exact:true}).click();

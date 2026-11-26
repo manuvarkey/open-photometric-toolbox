@@ -3,14 +3,19 @@
   "baseCommit": "5d18755",
   "chunks": [
     {
+      "file": "BUGRatingViewer-CwHcITPd.js",
+      "bytes": 2658,
+      "gzipBytes": 899
+    },
+    {
       "file": "BUGRatingViewer-D8RzUZHO.css",
       "bytes": 2205,
       "gzipBytes": 728
     },
     {
-      "file": "BUGRatingViewer-DytC7HvW.js",
-      "bytes": 2658,
-      "gzipBytes": 899
+      "file": "CIEClassificationModal-55FdEBFI.js",
+      "bytes": 4786,
+      "gzipBytes": 1729
     },
     {
       "file": "CIEClassificationModal-B1ecoGMy.css",
@@ -18,17 +23,12 @@
       "gzipBytes": 1158
     },
     {
-      "file": "CIEClassificationModal-BlBXQlRV.js",
-      "bytes": 4786,
-      "gzipBytes": 1727
-    },
-    {
       "file": "CUTableViewer-99WXfucH.css",
       "bytes": 2261,
       "gzipBytes": 716
     },
     {
-      "file": "CUTableViewer-BiFxuzUu.js",
+      "file": "CUTableViewer-DsyJ6l6s.js",
       "bytes": 2456,
       "gzipBytes": 1183
     },
@@ -38,24 +38,24 @@
       "gzipBytes": 1002
     },
     {
-      "file": "GoniometerConverterModal-DlrOersm.js",
+      "file": "GoniometerConverterModal-CJyDC0j9.js",
       "bytes": 4760,
-      "gzipBytes": 1947
+      "gzipBytes": 1948
     },
     {
-      "file": "IsoIlluminanceViewer-Bj505jsF.js",
-      "bytes": 10409,
-      "gzipBytes": 4657
+      "file": "IsoIlluminanceViewer-0a5B22Mw.js",
+      "bytes": 11059,
+      "gzipBytes": 4969
     },
     {
-      "file": "IsoIlluminanceViewer-DNGjo52k.css",
-      "bytes": 2517,
-      "gzipBytes": 808
+      "file": "IsoIlluminanceViewer-DUymZh7u.css",
+      "bytes": 2551,
+      "gzipBytes": 801
     },
     {
-      "file": "LuminaireCompare-C658Q01P.js",
+      "file": "LuminaireCompare-BgmyG6xJ.js",
       "bytes": 4511,
-      "gzipBytes": 1718
+      "gzipBytes": 1721
     },
     {
       "file": "LuminaireCompare-DVUNVOcC.css",
@@ -68,14 +68,9 @@
       "gzipBytes": 1119
     },
     {
-      "file": "NewLuminaireModal-CP5zcNwx.js",
+      "file": "NewLuminaireModal-VBI4Cjb_.js",
       "bytes": 10600,
-      "gzipBytes": 3644
-    },
-    {
-      "file": "Photometric3DViewer-C1oqfpHf.js",
-      "bytes": 474433,
-      "gzipBytes": 120546
+      "gzipBytes": 3645
     },
     {
       "file": "Photometric3DViewer-dDNOQ3tg.css",
@@ -83,9 +78,9 @@
       "gzipBytes": 639
     },
     {
-      "file": "PhotometricEditorModal-BTonplDy.js",
-      "bytes": 6350,
-      "gzipBytes": 2004
+      "file": "Photometric3DViewer-qCcruE5A.js",
+      "bytes": 474433,
+      "gzipBytes": 120547
     },
     {
       "file": "PhotometricEditorModal-DJWrWGmM.css",
@@ -93,24 +88,34 @@
       "gzipBytes": 757
     },
     {
+      "file": "PhotometricEditorModal-DxhQeTJI.js",
+      "bytes": 6350,
+      "gzipBytes": 2006
+    },
+    {
       "file": "PhotometricLibraryCatalog-BpyIqR0T.css",
       "bytes": 5583,
       "gzipBytes": 1273
     },
     {
-      "file": "PhotometricLibraryCatalog-vnfJiEr8.js",
+      "file": "PhotometricLibraryCatalog-CNuU5tug.js",
       "bytes": 6356,
-      "gzipBytes": 2557
+      "gzipBytes": 2559
     },
     {
-      "file": "Polar2DViewer-CXOzchnJ.js",
-      "bytes": 8700,
-      "gzipBytes": 3440
+      "file": "Polar2DViewer-C5wNFOpe.css",
+      "bytes": 3967,
+      "gzipBytes": 1067
     },
     {
-      "file": "Polar2DViewer-ZG9efLsc.css",
-      "bytes": 4652,
-      "gzipBytes": 1169
+      "file": "Polar2DViewer-CvExCdFr.js",
+      "bytes": 8313,
+      "gzipBytes": 3219
+    },
+    {
+      "file": "ReportViewer-BbScD2jK.js",
+      "bytes": 22542,
+      "gzipBytes": 6476
     },
     {
       "file": "ReportViewer-C9Qajyb5.css",
@@ -118,34 +123,39 @@
       "gzipBytes": 1344
     },
     {
-      "file": "ReportViewer-p7MwGw5Z.js",
-      "bytes": 23115,
-      "gzipBytes": 6775
-    },
-    {
       "file": "ZonalLumensTable-BY2FgDEN.css",
       "bytes": 1682,
       "gzipBytes": 617
     },
     {
-      "file": "ZonalLumensTable-CTig2sHS.js",
+      "file": "ZonalLumensTable-DioidHwJ.js",
       "bytes": 1139,
       "gzipBytes": 594
     },
     {
-      "file": "index-CK8pH4lP.js",
-      "bytes": 336807,
-      "gzipBytes": 104420
+      "file": "index-DET4OXM2.css",
+      "bytes": 19052,
+      "gzipBytes": 4440
     },
     {
-      "file": "index-KoaLT-Wf.css",
-      "bytes": 18945,
-      "gzipBytes": 4419
+      "file": "index-DUbH6QLH.js",
+      "bytes": 339974,
+      "gzipBytes": 105935
     },
     {
-      "file": "plotPaths-DnS79qjw.js",
+      "file": "plotPaths-CU7DFGYE.js",
       "bytes": 352,
-      "gzipBytes": 284
+      "gzipBytes": 287
+    },
+    {
+      "file": "useSvgViewport-DqWpcsoY.js",
+      "bytes": 2263,
+      "gzipBytes": 1134
+    },
+    {
+      "file": "useSvgViewport-c442e0LQ.css",
+      "bytes": 766,
+      "gzipBytes": 350
     }
   ],
   "ui": {
@@ -221,27 +231,30 @@
   ],
   "productionLoading": {
     "startup": [
-      "/assets/index-CK8pH4lP.js",
-      "/assets/Photometric3DViewer-C1oqfpHf.js"
+      "/assets/index-DUbH6QLH.js",
+      "/assets/Photometric3DViewer-qCcruE5A.js"
     ],
     "afterIso": [
-      "/assets/index-CK8pH4lP.js",
-      "/assets/Photometric3DViewer-C1oqfpHf.js",
-      "/assets/IsoIlluminanceViewer-Bj505jsF.js"
+      "/assets/index-DUbH6QLH.js",
+      "/assets/Photometric3DViewer-qCcruE5A.js",
+      "/assets/useSvgViewport-DqWpcsoY.js",
+      "/assets/IsoIlluminanceViewer-0a5B22Mw.js"
     ],
     "afterReport": [
-      "/assets/index-CK8pH4lP.js",
-      "/assets/Photometric3DViewer-C1oqfpHf.js",
-      "/assets/IsoIlluminanceViewer-Bj505jsF.js",
-      "/assets/plotPaths-DnS79qjw.js",
-      "/assets/ReportViewer-p7MwGw5Z.js"
+      "/assets/index-DUbH6QLH.js",
+      "/assets/Photometric3DViewer-qCcruE5A.js",
+      "/assets/useSvgViewport-DqWpcsoY.js",
+      "/assets/IsoIlluminanceViewer-0a5B22Mw.js",
+      "/assets/plotPaths-CU7DFGYE.js",
+      "/assets/ReportViewer-BbScD2jK.js"
     ],
     "bytes": {
-      "/assets/index-CK8pH4lP.js": 336807,
-      "/assets/Photometric3DViewer-C1oqfpHf.js": 474433,
-      "/assets/IsoIlluminanceViewer-Bj505jsF.js": 10409,
-      "/assets/plotPaths-DnS79qjw.js": 352,
-      "/assets/ReportViewer-p7MwGw5Z.js": 23115
+      "/assets/index-DUbH6QLH.js": 339974,
+      "/assets/Photometric3DViewer-qCcruE5A.js": 474433,
+      "/assets/useSvgViewport-DqWpcsoY.js": 2263,
+      "/assets/IsoIlluminanceViewer-0a5B22Mw.js": 11059,
+      "/assets/plotPaths-CU7DFGYE.js": 352,
+      "/assets/ReportViewer-BbScD2jK.js": 22542
     },
     "failedChunkFeedback": true
   },
@@ -273,5 +286,28 @@
     "ldtTypeIndicatorZero": true,
     "ldtUniformEditMetadata": true,
     "ldtAbsoluteEditNormalization": true
+  },
+  "svgInteraction": {
+    "vectorCameras": [
+      "Polar",
+      "Cartesian",
+      "Iso-illuminance"
+    ],
+    "cursorAnchors": true,
+    "hoverAfterZoom": true,
+    "dragAndFit": true,
+    "geometryReused": true,
+    "limits": [
+      0.4,
+      5
+    ],
+    "desktopFontUpdate": true
+  },
+  "nativeTypography": {
+    "platform": "Linux GTK/Pango",
+    "configuredFont": "Iosevka 11",
+    "interfaceVisuallyInspected": true,
+    "nativeFileSmokePassed": true,
+    "otherPlatforms": "WebView CSS menu-font fallback; not natively tested"
   }
 }

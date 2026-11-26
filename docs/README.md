@@ -4,6 +4,8 @@ This repository contains the decompiled artifacts, extracted modules, and techni
 
 ## Documentation Index
 
+Standards acquisition and validation: [Required standards and technical references](./required_standards.md).
+
 Current work: [Direct-ratio follow-up](./direct_ratio_investigation.md), [Core, vector views, and interface implementation plan](./feature_implementation_plan.md), [verification results and limits](./feature_verification.md), with [core-only investigation findings](./core_module_findings.md). These findings qualify earlier parity claims in the historical specifications below.
 
 1. **[Installer & Extraction Analysis](./installer_and_extraction.md)**

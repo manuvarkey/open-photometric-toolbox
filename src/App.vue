@@ -4,10 +4,12 @@ import { invoke, isTauri } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import AppIcon from "./components/AppIcon.vue";
+import RibbonAction from "./components/RibbonAction.vue";
 import ThemedSelect from "./components/ThemedSelect.vue";
 import { useLuminaireCatalog } from "./composables/useLuminaireCatalog";
 import { parsePhotometric } from "./core/photometricParser";
 import { readPhotometricText, savePhotometricText } from "./services/photometricFiles";
+import { initializeInterfaceTypography } from "./services/interfaceTypography";
 import { toTypeCData } from "./core/goniometerConversion";
 // Keep shell settings available while optional tool chunks load or fail.
 function lazyTool(loader: AsyncComponentLoader) {
@@ -396,7 +398,10 @@ watch([showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNe
   }
 });
 
+let disposeTypography: (() => void) | undefined;
+let shellUnmounted = false;
 onMounted(async () => {
+  void initializeInterfaceTypography().then(dispose => { if (shellUnmounted) dispose(); else disposeTypography = dispose; }).catch(error => console.warn('Desktop typography initialization failed.', error));
   document.documentElement.dataset.theme = theme.value;
   window.addEventListener("keydown", handleShortcuts);
   document.addEventListener("click", dismissMenus);
@@ -413,6 +418,8 @@ onMounted(async () => {
   }
 });
 onBeforeUnmount(() => {
+  shellUnmounted = true;
+  disposeTypography?.();
   dialogObserver?.disconnect();
   window.removeEventListener("keydown", handleShortcuts);
   document.removeEventListener("click", dismissMenus);
@@ -491,40 +498,49 @@ onBeforeUnmount(() => {
       </div></details>
     </nav>
     <RibbonToolbar ref="ribbonToolbar">
-      <div v-if="activeRibbonTab === 'file'" class="compact-commands">
-        <button @click="showNewLuminaireModal = true"><AppIcon name="plus" :size="15" />New Luminaire</button>
-        <button @click="openFile"><AppIcon name="open" :size="15" />Open</button>
-        <button @click="saveFile"><AppIcon name="save" :size="15" />Save IES</button>
-        <button class="file-secondary" @click="showEditorModal = true"><AppIcon name="edit" :size="15" />Edit Luminaire</button>
-        <button class="file-secondary" @click="exportLDT"><AppIcon name="convert" :size="15" />Export LDT</button>
-        <button class="file-secondary" @click="openCatalog()"><AppIcon name="database" :size="15" />Library</button>
-        <details class="file-more"><summary>More</summary><div class="menu-content"><button @click="showEditorModal = true">Edit Luminaire</button><button @click="exportLDT">Export LDT</button><button @click="openCatalog()">Library</button></div></details>
-        <details><summary>Samples</summary><div class="menu-content"><button @click="loadSample('downlight')">Downlight</button><button @click="loadSample('roadway')">Roadway</button><button @click="loadSample('floodlight')">Floodlight</button></div></details>
-      </div>
-      <div v-else-if="activeRibbonTab === 'visualize'" class="compact-commands">
-        <label>View <ThemedSelect label="View" :model-value="visualizationView" :options="[{label:'3D Candela Web',value:'3d'},{label:'2D Candela Plot',value:'polar'},{label:'Iso-illuminance',value:'template'}]" @update:model-value="selectView" /></label>
-        <template v-if="visualizationView === '3d'">
+      <template v-if="activeRibbonTab === 'file'">
+        <div class="ribbon-group"><div class="ribbon-actions">
+          <RibbonAction icon="plus" label="New Luminaire" @click="showNewLuminaireModal = true" />
+          <RibbonAction icon="open" label="Open" @click="openFile" />
+          <RibbonAction icon="save" label="Save IES" @click="saveFile" />
+        </div><small>Document</small></div>
+        <div class="ribbon-group"><div class="ribbon-actions">
+          <RibbonAction icon="edit" label="Edit Luminaire" @click="showEditorModal = true" />
+          <RibbonAction icon="convert" label="Export LDT" @click="exportLDT" />
+        </div><small>Photometry</small></div>
+        <div class="ribbon-group"><div class="ribbon-actions">
+          <RibbonAction icon="database" label="Library" @click="openCatalog()" />
+          <details class="ribbon-menu"><summary><AppIcon name="folder" :size="24" /><span>Samples</span></summary><div class="menu-content"><button @click="loadSample('downlight')">Downlight</button><button @click="loadSample('roadway')">Roadway</button><button @click="loadSample('floodlight')">Floodlight</button></div></details>
+        </div><small>Sources</small></div>
+      </template>
+      <template v-else-if="activeRibbonTab === 'visualize'">
+        <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="visualizationView" :options="[{label:'3D Candela Web',value:'3d'},{label:'2D Candela Plot',value:'polar'},{label:'Iso-illuminance',value:'template'}]" @update:model-value="selectView" /></label></div><small>Visualization</small></div>
+        <div v-if="visualizationView === '3d'" class="ribbon-group"><div class="ribbon-fields">
           <label>Rendering <ThemedSelect label="Rendering" v-model="wireframeMode" :options="[{label:'Solid',value:false},{label:'Wireframe',value:true}]" /></label>
           <details><summary>Overlays</summary><div class="menu-content"><label><input v-model="show3DAxes" type="checkbox"> Axes</label><label><input v-model="show3DRings" type="checkbox"> Rings</label></div></details>
-        </template>
-        <template v-else-if="visualizationView === 'polar'">
+        </div><small>Appearance</small></div>
+        <div v-else-if="visualizationView === 'polar'" class="ribbon-group"><div class="ribbon-fields">
           <label>Plot <ThemedSelect label="Plot" v-model="selectedPlotMode" :options="[{label:'Polar',value:'polar'},{label:'Cartesian',value:'cartesian'}]" /></label>
           <label>Plane <ThemedSelect label="Plane" v-model="selectedPolarPlane" :options="[{label:'All planes',value:'all'},{label:'Max plane',value:'max'},{label:'0° Transverse',value:'0'},{label:'90° Longitudinal',value:'90'}]" /></label>
-        </template>
-        <label v-else>Illuminance Units <ThemedSelect label="Illuminance Units" v-model="illuminanceUnits" :options="[{label:'Footcandles',value:'fc'},{label:'Lux',value:'lux'}]" /></label>
-      </div>
-      <div v-else-if="activeRibbonTab === 'analysis'" class="compact-commands">
-        <label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'}]" @update:model-value="selectAnalysis" /></label>
-        <button class="analysis-secondary" @click="showCIEModal = true"><AppIcon name="chart" :size="15" />CIE Classification</button>
-        <button class="analysis-secondary" @click="copyData"><AppIcon name="report" :size="15" />Copy Photometric Summary</button>
-        <details class="analysis-more"><summary>More</summary><div class="menu-content"><button @click="showCIEModal = true">CIE Classification</button><button @click="copyData">Copy Photometric Summary</button></div></details>
-        <details><summary>Utilities</summary><div class="menu-content"><button @click="showConverterModal = true">Convert Type B/C</button></div></details>
-      </div>
-      <div v-else-if="activeRibbonTab === 'compare'" class="compact-commands compare-commands">
-        <div class="compare-slot"><span>A</span><ThemedSelect label="Luminaire A" v-model="selectionA" :options="comparisonOptions" filter /><button aria-label="Open luminaire A" title="Open luminaire A" @click="openComparison('A')"><AppIcon name="open" :size="15" /></button><button aria-label="Library for A" title="Library for A" @click="openCatalog('A')"><AppIcon name="database" :size="15" /></button></div>
-        <div class="compare-slot"><span>B</span><ThemedSelect label="Luminaire B" v-model="selectionB" :options="comparisonOptions" filter /><button aria-label="Open luminaire B" title="Open luminaire B" @click="openComparison('B')"><AppIcon name="open" :size="15" /></button><button aria-label="Library for B" title="Library for B" @click="openCatalog('B')"><AppIcon name="database" :size="15" /></button></div>
-      </div>
-      <div v-else class="compact-commands"><span>Report options and export are beside the preview.</span></div>
+        </div><small>Distribution</small></div>
+        <div v-else class="ribbon-group"><div class="ribbon-fields"><label>Illuminance Units <ThemedSelect label="Illuminance Units" v-model="illuminanceUnits" :options="[{label:'Footcandles',value:'fc'},{label:'Lux',value:'lux'}]" /></label></div><small>Illuminance</small></div>
+      </template>
+      <template v-else-if="activeRibbonTab === 'analysis'">
+        <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'}]" @update:model-value="selectAnalysis" /></label></div><small>Analysis</small></div>
+        <div class="ribbon-group"><div class="ribbon-actions">
+          <RibbonAction icon="chart" label="CIE Class" accessible-label="CIE Classification" @click="showCIEModal = true" />
+          <RibbonAction icon="report" label="Copy Summary" accessible-label="Copy Photometric Summary" @click="copyData" />
+          <RibbonAction icon="convert" label="Convert B/C" accessible-label="Convert Type B/C" @click="showConverterModal = true" />
+        </div><small>Tools</small></div>
+      </template>
+      <template v-else-if="activeRibbonTab === 'compare'">
+        <div v-for="side in (['A','B'] as const)" :key="side" class="ribbon-group comparison-group"><div class="ribbon-fields compare-slot">
+          <ThemedSelect :label="`Luminaire ${side}`" :model-value="side === 'A' ? selectionA : selectionB" :options="comparisonOptions" filter @update:model-value="side === 'A' ? selectionA = $event : selectionB = $event" />
+          <button :aria-label="`Open luminaire ${side}`" :title="`Open luminaire ${side}`" @click="openComparison(side)"><AppIcon name="open" :size="18" /></button>
+          <button :aria-label="`Library for ${side}`" :title="`Library for ${side}`" @click="openCatalog(side)"><AppIcon name="database" :size="18" /></button>
+        </div><small>Luminaire {{ side }}</small></div>
+      </template>
+      <div v-else class="ribbon-group"><div class="ribbon-fields"><span>Report options and export are beside the preview.</span></div><small>Reports</small></div>
     </RibbonToolbar>
 
     <main class="main-body">

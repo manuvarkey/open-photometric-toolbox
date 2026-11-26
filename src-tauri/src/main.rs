@@ -1,5 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod desktop_typography;
+
 use tauri::Manager;
 use std::sync::OnceLock;
 
@@ -60,6 +62,7 @@ fn main() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
+            desktop_typography::install(app);
             #[cfg(target_os = "linux")]
             {
                 use gtk::prelude::*;
@@ -90,7 +93,8 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             read_photometric_file,
             save_photometric_file,
-            list_system_font_families
+            list_system_font_families,
+            desktop_typography::desktop_font
         ])
         .run(tauri::generate_context!())
         .expect("error while running Open Photometric Toolbox");

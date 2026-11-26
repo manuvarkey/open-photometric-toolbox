@@ -2,3 +2,8 @@
 identifier = "allow-list-system-font-families"
 description = "Allows the main window to read installed font family names for reports."
 commands.allow = ["list_system_font_families"]
+
+[[permission]]
+identifier = "allow-desktop-font"
+description = "Allows the main window to read desktop UI typography metrics."
+commands.allow = ["desktop_font"]

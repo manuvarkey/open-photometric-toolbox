@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
-import AppIcon from "./AppIcon.vue";
+import { computed, ref, watch } from "vue";
+import PlotZoomControls from "./PlotZoomControls.vue";
+import { useSvgViewport } from "../composables/useSvgViewport";
 import { createCandelaSampler } from "../core/photometricSampling";
 import type { PhotometricData } from "../core/types";
 
@@ -20,62 +21,9 @@ const currentPlane = ref<"all" | "max" | "0" | "90">(props.activePlane);
 const plotMode = computed(() => props.initialPlotMode);
 const hoveredPoint = ref<{ angle: number; cd: number; plane: string; x: number; y: number } | null>(null);
 
-// Interactive 2D Zoom & Pan State
-const zoomLevel = ref(1.0);
-const panX = ref(0);
-const panY = ref(0);
-const isPanning = ref(false);
-let startClientX = 0;
-let startClientY = 0;
-let startPanX = 0;
-let startPanY = 0;
-
-function handleWheel(e: WheelEvent) {
-  const zoomFactor = e.deltaY < 0 ? 1.15 : 0.87;
-  const newZoom = Math.max(0.4, Math.min(5.0, zoomLevel.value * zoomFactor));
-  zoomLevel.value = Number(newZoom.toFixed(2));
-}
-
-function handleMouseDown(e: MouseEvent) {
-  if (e.button !== 0 && e.button !== 1) return;
-  // If clicking inside interactive controls, ignore
-  if ((e.target as HTMLElement).closest(".top-controls-bar, .polar-legend, button")) return;
-  isPanning.value = true;
-  startClientX = e.clientX;
-  startClientY = e.clientY;
-  startPanX = panX.value;
-  startPanY = panY.value;
-
-  window.addEventListener("mousemove", onWindowMouseMove);
-  window.addEventListener("mouseup", onWindowMouseUp);
-}
-
-function onWindowMouseMove(e: MouseEvent) {
-  if (!isPanning.value) return;
-  panX.value = startPanX + (e.clientX - startClientX);
-  panY.value = startPanY + (e.clientY - startClientY);
-}
-
-function onWindowMouseUp() {
-  isPanning.value = false;
-  window.removeEventListener("mousemove", onWindowMouseMove);
-  window.removeEventListener("mouseup", onWindowMouseUp);
-}
-onBeforeUnmount(onWindowMouseUp);
-
-function zoomIn() {
-  zoomLevel.value = Math.min(5.0, Number((zoomLevel.value * 1.25).toFixed(2)));
-}
-
-function zoomOut() {
-  zoomLevel.value = Math.max(0.4, Number((zoomLevel.value / 1.25).toFixed(2)));
-}
-
-function resetZoom() {
-  zoomLevel.value = 1.0;
-  panX.value = 0;
-  panY.value = 0;
-}
+const cameraSize = computed(() => plotMode.value === "polar" ? { width: 500, height: 500 } : { width: 640, height: 400 });
+const { svg, zoom: zoomLevel, viewBox, isPanning, point: eventPoint, wheel, pointerDown, pointerMove, pointerUp, fit, zoomIn, zoomOut } = useSvgViewport(cameraSize);
+function beginPan(event: PointerEvent) { hoveredPoint.value = null; pointerDown(event); }
 
 watch(
   () => props.activePlane,
@@ -189,14 +137,12 @@ const visibleCurves = computed(() => {
   return allCurves.value.filter((c) => c.id === currentPlane.value);
 });
 
-function handleCartesianMouseMove(e: MouseEvent) {
+function handleCartesianMouseMove(e: PointerEvent) {
+  pointerMove(e);
   if (!props.data || plotMode.value !== "cartesian" || isPanning.value) return;
-  const svgEl = e.currentTarget as SVGSVGElement;
-  const rect = svgEl.getBoundingClientRect();
-  const fracTotalX = (e.clientX - rect.left) / rect.width;
-  const fracTotalY = (e.clientY - rect.top) / rect.height;
-  const mouseX = fracTotalX * cartWidth;
-  const mouseY = fracTotalY * cartHeight;
+  const point = eventPoint(e);
+  if (!point) return;
+  const mouseX = point.x, mouseY = point.y;
 
   if (mouseX < padL || mouseX > padL + plotW || mouseY < padT || mouseY > padT + plotH) {
     hoveredPoint.value = null;
@@ -221,41 +167,19 @@ function handleCartesianMouseLeave() {
   <div class="polar-viewer-container">
     <!-- Top Control Bar: Graph Mode, Plane Switcher & Zoom Controls -->
     <div class="top-controls-bar">
-      <!-- Zoom Controls Group -->
-      <div class="zoom-controls-group">
-        <button class="zoom-btn" aria-label="Zoom Out" title="Zoom Out" @click="zoomOut">
-          <AppIcon name="minus" :size="13" />
-        </button>
-        <span class="zoom-btn zoom-level-badge">
-          {{ Math.round(zoomLevel * 100) }}%
-        </span>
-        <button class="zoom-btn" aria-label="Zoom In" title="Zoom In" @click="zoomIn">
-          <AppIcon name="plus" :size="13" />
-        </button>
-        <button class="zoom-btn reset-btn" title="Reset Zoom and Pan (Fit)" @click="resetZoom">
-          <AppIcon name="reset" :size="13" />
-          <span>Fit</span>
-        </button>
-      </div>
+      <PlotZoomControls :zoom="zoomLevel" @zoom-in="zoomIn" @zoom-out="zoomOut" @fit="fit" />
     </div>
 
     <!-- Zoomable & Pannable Graph Canvas Viewport -->
     <div
       class="graph-viewport"
-      @wheel.prevent="handleWheel"
-      @mousedown="handleMouseDown"
       :class="{ grabbing: isPanning }"
     >
-      <div
-        class="graph-stage"
-        :style="{
-          transform: `translate(${panX}px, ${panY}px) scale(${zoomLevel})`,
-          transformOrigin: 'center center',
-        }"
-      >
+      <div class="graph-stage">
         <!-- 1. POLAR VIEW -->
         <div v-if="plotMode === 'polar'" class="polar-svg-wrap">
-          <svg width="500" height="500" viewBox="0 0 500 500" class="polar-svg">
+          <svg ref="svg" width="100%" height="100%" :viewBox="viewBox" class="polar-svg" role="img" aria-label="Vector polar candela distribution"
+            @wheel.prevent="wheel" @pointerdown="beginPan" @pointermove="pointerMove" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp">
             <!-- Concentric candela rings -->
             <g class="grid-rings">
               <circle
@@ -326,12 +250,12 @@ function handleCartesianMouseLeave() {
         <!-- 2. CARTESIAN X-Y VIEW -->
         <div v-else class="cartesian-svg-wrap">
           <svg
-            :width="cartWidth"
-            :height="cartHeight"
-            :viewBox="`0 0 ${cartWidth} ${cartHeight}`"
+            ref="svg" width="100%" height="100%" :viewBox="viewBox"
+            role="img" aria-label="Vector Cartesian candela distribution"
+            @wheel.prevent="wheel" @pointerdown="beginPan" @pointerup="pointerUp" @pointercancel="pointerUp" @lostpointercapture="pointerUp"
             class="cartesian-svg"
-            @mousemove="handleCartesianMouseMove"
-            @mouseleave="handleCartesianMouseLeave"
+            @pointermove="handleCartesianMouseMove"
+            @pointerleave="handleCartesianMouseLeave"
           >
             <!-- Background grid rectangle -->
             <rect
@@ -592,58 +516,6 @@ function handleCartesianMouseLeave() {
   font-weight: 600;
 }
 
-/* Zoom Controls */
-.zoom-controls-group {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  padding: 2px 4px;
-}
-
-.zoom-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--well);
-  border: 1px solid var(--line);
-  color: var(--text);
-  border-radius: 3px;
-  width: 26px;
-  height: 24px;
-  padding: 0;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.zoom-btn:hover {
-  background: var(--raised);
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.zoom-level-badge {
-  width: auto;
-  min-width: 44px;
-  padding: 0 6px;
-  font-size: 0.75rem;
-  font-family: var(--ui-font-family);
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.zoom-btn.reset-btn {
-  width: auto;
-  gap: 4px;
-  padding: 0 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
 .color-dot {
   width: 8px;
   height: 8px;
@@ -667,7 +539,7 @@ function handleCartesianMouseLeave() {
   user-select: none;
 }
 
-.graph-viewport.grabbing {
+.graph-viewport.grabbing, .graph-viewport.grabbing svg {
   cursor: grabbing;
 }
 
@@ -677,15 +549,16 @@ function handleCartesianMouseLeave() {
   justify-content: center;
   width: 100%;
   height: 100%;
-  transition: transform 0.04s ease-out;
-  will-change: transform;
 }
 
 .polar-svg-wrap {
-  width: min(100%, 100cqh, 500px);
-  aspect-ratio: 1;
+  width: 100%;
+  height: 100%;
   flex-shrink: 0;
 }
+
+.polar-svg, .cartesian-svg { touch-action: none; }
+.polar-svg :is(path, line, circle, rect), .cartesian-svg :is(path, line, circle, rect) { vector-effect: non-scaling-stroke; }
 
 .polar-svg {
   width: 100%;
@@ -693,8 +566,8 @@ function handleCartesianMouseLeave() {
 }
 
 .cartesian-svg-wrap {
-  width: min(100%, 160cqh, 640px);
-  aspect-ratio: 8 / 5;
+  width: 100%;
+  height: 100%;
   flex-shrink: 0;
 }
 

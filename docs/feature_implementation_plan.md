@@ -210,3 +210,14 @@ Independent preparation may proceed in parallel, but later features must consume
 - [x] Retain before/after performance and bundle measurements, fixture provenance, changed numerical expectations, and remaining platform limits. Update existing documentation where earlier parity claims were disproven.
 
 Stop when every requested item in the scope table has its proof. Do not turn this into a general photometric-engine rewrite, a legacy UI reconstruction, or a theme redesign. Any unresolved format or formula question must be recorded as a concrete dependency before its implementation step is considered complete.
+
+## Interface alignment and SVG interaction follow-up
+
+Status: **implemented and verified**. See the verification record for native platform coverage.
+
+Requested scope: match GEstimator's desktop font handling and ribbon styling; keep candela plots vector-rendered during zoom; give iso-illuminance the same zoom, pan and Fit behavior.
+
+- [x] Read GEstimator as a reference only. Resolve UI typography from native desktop metrics, with CSS `font: menu` and the existing system fallback; propagate native changes and clean up the listener. Keep report font selection independent.
+- [x] Restore grouped ribbon actions, 24 px icons, two-line captions, reference spacing and font-dependent fixed depth. Measure captions and adapt action layout at narrow widths without hiding labels or clipping commands. Preserve all current controls and both A/B selectors.
+- [x] Use one SVG viewport interaction helper and shared zoom controls for polar, Cartesian and illuminance plots. Change SVG `viewBox` coordinates rather than CSS-transforming the stage. Wheel zoom anchors to the pointer; pointer capture supports dragging; Fit restores the original bounds. Hover uses inverse SVG screen coordinates.
+- [x] Keep contour and candela paths unchanged by camera interaction. Verify no raster plot content, pointer/readout accuracy, zoom limits, resizing, both themes and 100%/130% UI scale. Verify desktop font updates resize ribbon captions without changing report preferences.
