@@ -20,7 +20,7 @@ pub fn desktop_font(state: tauri::State<'_, DesktopTypography>) -> Result<Deskto
         .map_err(|error| error.to_string())
 }
 
-/// Match GEstimator's GTK/Pango menu metrics; other WebViews use CSS font:menu.
+/// Read GTK/Pango font settings; other WebViews use the system UI font.
 pub fn install(app: &tauri::App) {
     app.manage(DesktopTypography::default());
     #[cfg(target_os = "linux")]

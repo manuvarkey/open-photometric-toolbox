@@ -9,12 +9,11 @@ export function applyDesktopFont(native: DesktopFont = {}) {
   const probe = document.createElement('span');
   probe.style.cssText = 'position:fixed;visibility:hidden;font:menu';
   document.body.append(probe);
-  const menu = getComputedStyle(probe);
-  const menuFamily = menu.fontFamily;
-  const menuSize = menu.fontSize;
+  const menuSize = getComputedStyle(probe).fontSize;
   probe.remove();
   const style = document.documentElement.style;
-  style.setProperty('--ui-font-family', native.family ? reportFontCSS(native.family) : menuFamily || 'system-ui');
+  if (native.family) style.setProperty('--ui-font-family', reportFontCSS(native.family));
+  else style.removeProperty('--ui-font-family');
   const size = native.size && /^\d+(\.\d+)?(px|pt)$/.test(native.size) ? native.size : menuSize;
   if (parseFloat(size) > 0) style.setProperty('--ui-font-size', size);
   else style.removeProperty('--ui-font-size');
@@ -26,6 +25,6 @@ export async function initializeInterfaceTypography(): Promise<() => void> {
   if (!isTauri()) return () => {};
   const unlisten = await listen<DesktopFont>('desktop-font', event => applyDesktopFont(event.payload));
   try { applyDesktopFont(await invoke<DesktopFont>('desktop_font')); }
-  catch (error) { console.warn('Desktop font metrics unavailable; using the WebView menu font.', error); }
+  catch (error) { console.warn('Desktop font metrics unavailable; using the system UI font.', error); }
   return unlisten;
 }

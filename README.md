@@ -10,6 +10,20 @@
 
 Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides a native desktop interface, tested photometric calculations, and a responsive ribbon with dark and light themes.
 
+## Screenshots
+
+**3D candela distribution · Dark theme**
+
+![Dark workspace showing an interactive 3D candela distribution with reference rings and a luminaire inspector](docs/screenshots/3d-candela.png)
+
+**Polar candela plot · Light theme**
+
+![Light workspace showing transverse and longitudinal intensity curves on a polar candela plot](docs/screenshots/polar-candela.png)
+
+**Photometric report preview**
+
+![Report workspace showing an indoor photometric report with luminaire data and a polar intensity diagram](docs/screenshots/report-preview.png)
+
 ---
 
 ## Key Capabilities
@@ -44,7 +58,7 @@ Built with **Tauri v2 + Vue 3 + Three.js + TypeScript**, it provides a native de
   - Isolated print-to-PDF generation free of application UI elements.
   - Searchable installed font-family selection in the desktop app, applied to paper, PDF, and HTML. HTML recipients need the selected local font; fonts are not embedded in HTML. Browser builds offer explicit font discovery when Local Font Access is available.
 - **Native Desktop Integration**:
-  - Desktop UI typography from GTK/Pango on Linux and the WebView menu font elsewhere, with grouped ribbon commands.
+  - Interface typography follows the system UI font, including the configured GTK font on Linux. Reports have their own font setting.
   - Client-Side Decorations (CSD) with compositor shadows, window dragging, and instant dark/light high-contrast theme switching.
 
 ---
