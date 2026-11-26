@@ -660,3 +660,14 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 }
 
 .tool-load-state { margin: auto; padding: 24px; color: var(--text); text-align: center; }
+
+.display-menu > summary { padding: 4px 8px; background: var(--panel); }
+.display-menu .menu-content { top: calc(100% + 5px); min-width: 210px; gap: 10px; padding: 12px; border-radius: var(--control-radius); }
+.display-menu .menu-content label { justify-content: space-between; }
+.display-menu .menu-content label:has(input) { justify-content: flex-start; }
+.display-menu .menu-content button { text-align: left; }
+.status-bar { height: auto; min-height: 24px; }
+.status-bar .status-item:first-child { min-width: 0; flex: 1; padding: 3px 0; }
+.status-bar .status-item:last-child { flex-shrink: 0; margin-left: 12px; }
+.status-bar [role='status'] { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; overflow-wrap: anywhere; white-space: pre-line; }
+.status-badge { flex-shrink: 0; }

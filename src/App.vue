@@ -523,6 +523,12 @@ onBeforeUnmount(() => {
 
       <div class="titlebar-right" data-tauri-drag-region>
         <div class="window-actions">
+      <details class="display-menu"><summary><AppIcon name="settings" :size="14" /> Display</summary><div class="menu-content">
+        <button @click="toggleTheme">Theme: {{ theme === 'dark' ? 'Dark' : 'Light' }}</button>
+        <label>UI Scale <ThemedSelect label="UI Scale" :model-value="uiScale" :options="[0.9,1,1.1,1.2,1.3,1.5].map(value => ({value, label: `${Math.round(value*100)}%`}))" @update:model-value="setScale" /></label>
+        <label><input v-model="showInspector" type="checkbox"> Show Inspector</label>
+        <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
+      </div></details>
           <button
             class="theme-toggle-btn"
             aria-label="About Open Photometric Toolbox" title="About Open Photometric Toolbox"
@@ -563,13 +569,8 @@ onBeforeUnmount(() => {
     </header>
 
     <nav class="ribbon-tabs" role="tablist" aria-label="Workspace" @keydown="navigateTabs">
-      <button v-for="tab in (['file', 'visualize', 'analysis', 'compare', 'reports'] as const)" :key="tab" role="tab" :aria-selected="activeRibbonTab === tab" :tabindex="activeRibbonTab === tab ? 0 : -1" :class="{ active: activeRibbonTab === tab }" @click="selectRibbonTab(tab)"><AppIcon :name="({ file: 'folder', visualize: 'cube', analysis: 'calculator', compare: 'compare', reports: 'report' })[tab]" :size="15" /><span>{{ tab === 'analysis' ? 'Analyze' : tab.charAt(0).toUpperCase() + tab.slice(1) }}</span></button>
-      <details class="display-menu"><summary><AppIcon name="settings" :size="14" /> Display</summary><div class="menu-content">
-        <label><input v-model="showInspector" type="checkbox"> Show Inspector</label>
-        <button @click="toggleTheme">Theme: {{ theme === 'dark' ? 'Dark' : 'Light' }}</button>
-        <label>UI Scale <ThemedSelect label="UI Scale" :model-value="uiScale" :options="[0.9,1,1.1,1.2,1.3,1.5].map(value => ({value, label: `${Math.round(value*100)}%`}))" @update:model-value="setScale" /></label>
-        <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
-      </div></details>
+      <button v-for="tab in (['file', 'visualize', 'analysis', 'compare', 'reports'] as const)" :key="tab" role="tab" :aria-selected="activeRibbonTab === tab" :tabindex="activeRibbonTab === tab ? 0 : -1" :class="{ active: activeRibbonTab === tab }" @click="selectRibbonTab(tab)"><span>{{ tab === 'analysis' ? 'Analyze' : tab.charAt(0).toUpperCase() + tab.slice(1) }}</span></button>
+
     </nav>
     <RibbonToolbar ref="ribbonToolbar" :class="{ 'report-ribbon': activeRibbonTab === 'reports' }">
       <template v-if="activeRibbonTab === 'file'">
@@ -580,7 +581,7 @@ onBeforeUnmount(() => {
         </div><small>Document</small></div>
         <div class="ribbon-group"><div class="ribbon-actions">
           <RibbonAction icon="edit" label="Edit Luminaire" @click="showEditorModal = true" />
-          <RibbonAction icon="convert" label="Export LDT" @click="exportLDT" />
+          <RibbonAction icon="export" label="Export LDT" @click="exportLDT" />
         </div><small>Photometry</small></div>
         <div class="ribbon-group"><div class="ribbon-actions">
           <RibbonAction icon="database" label="Library" @click="openCatalog()" />
@@ -611,8 +612,7 @@ onBeforeUnmount(() => {
       <template v-else-if="activeRibbonTab === 'analysis'">
         <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'},{label:'CIE Classification',value:'cie'}]" @update:model-value="selectAnalysis" /></label></div><small>Analysis</small></div>
         <div class="ribbon-group"><div class="ribbon-actions">
-          <RibbonAction icon="chart" label="CIE Class" accessible-label="CIE Classification" :aria-pressed="activeView === 'cie'" @click="selectAnalysis('cie')" />
-          <RibbonAction icon="report" label="Copy Summary" accessible-label="Copy Photometric Summary" @click="copyData" />
+          <RibbonAction icon="copy" label="Copy Summary" accessible-label="Copy Photometric Summary" @click="copyData" />
           <RibbonAction icon="convert" label="Convert B/C" accessible-label="Convert Type B/C" @click="showConverterModal = true" />
         </div><small>Tools</small></div>
       </template>
@@ -647,8 +647,8 @@ onBeforeUnmount(() => {
         <div class="ribbon-group">
           <div class="ribbon-actions">
             <RibbonAction icon="refresh" :label="reportFontsLoading ? 'Loading fonts…' : 'Load system fonts'" :disabled="reportFontsLoading" @click="loadReportFonts" />
-            <RibbonAction icon="report" label="Print / Save PDF" :disabled="!reportViewer" @click="reportViewer?.printReport()" />
-            <RibbonAction icon="save" label="Export HTML" accessible-label="Export HTML Report" :disabled="!reportViewer" @click="reportViewer?.downloadHtmlReport()" />
+            <RibbonAction icon="export" label="Print / Save PDF" :disabled="!reportViewer" @click="reportViewer?.printReport()" />
+            <RibbonAction icon="export" label="Export HTML" accessible-label="Export HTML Report" :disabled="!reportViewer" @click="reportViewer?.downloadHtmlReport()" />
           </div>
           <small>Fonts &amp; Export</small>
         </div>

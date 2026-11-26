@@ -11,7 +11,7 @@
   font-family: var(--ui-font-family);
   font-size: var(--ui-font-size);
   --text-size-ui: 1rem;
-  --text-size-caption: 0.85rem;
+  --text-size-caption: 1rem;
   --toolbar-icon: var(--muted);
   --text-size-heading: 1.1rem;
   --text-size-display: 1.25rem;

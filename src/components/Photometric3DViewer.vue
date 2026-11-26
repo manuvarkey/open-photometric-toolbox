@@ -49,6 +49,7 @@ let prevMouseX = 0;
 let prevMouseY = 0;
 let spherical = { radius: 14, theta: Math.PI / 4, phi: Math.PI / 6 };
 let target = new THREE.Vector3(0, 0, 0);
+const cameraRight = new THREE.Vector3();
 
 function initThree() {
   if (!canvasContainer.value) return;
@@ -333,9 +334,10 @@ function setupInteractions() {
       spherical.phi += deltaX * 0.008;
       spherical.theta = Math.max(0.01, Math.min(Math.PI - 0.01, spherical.theta - deltaY * 0.008));
       updateCamera();
-    } else if (isPanning) {
+    } else if (isPanning && camera) {
       const panSpeed = 0.012;
-      target.x -= deltaX * panSpeed;
+      cameraRight.set(1, 0, 0).applyQuaternion(camera.quaternion);
+      target.addScaledVector(cameraRight, deltaX * panSpeed);
       target.y += deltaY * panSpeed;
       updateCamera();
     }
