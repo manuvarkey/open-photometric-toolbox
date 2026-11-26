@@ -190,7 +190,8 @@ function handleCompareWith(other: PhotometricData) {
 // 3D Visualizer controls
 const wireframeMode = ref(false);
 const show3DAxes = ref(true);
-const show3DRings = ref(true);
+const rings3D = ref({ horizontal: true, transverse: false, longitudinal: false, maximum: false });
+const show3DAngleMarkers = ref(true);
 
 // Ribbon reference
 const ribbonToolbar = ref<InstanceType<typeof RibbonToolbar>>();
@@ -589,7 +590,17 @@ onBeforeUnmount(() => {
         <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="visualizationView" :options="[{label:'3D Candela Web',value:'3d'},{label:'2D Candela Plot',value:'polar'},{label:'Iso-illuminance',value:'template'}]" @update:model-value="selectView" /></label></div><small>Visualization</small></div>
         <div v-if="visualizationView === '3d'" class="ribbon-group"><div class="ribbon-fields">
           <label>Rendering <ThemedSelect label="Rendering" v-model="wireframeMode" :options="[{label:'Solid',value:false},{label:'Wireframe',value:true}]" /></label>
-          <details><summary>Overlays</summary><div class="menu-content"><label><input v-model="show3DAxes" type="checkbox"> Axes</label><label><input v-model="show3DRings" type="checkbox"> Rings</label></div></details>
+          <details>
+            <summary>Overlays</summary>
+            <div class="menu-content">
+              <label><input v-model="show3DAxes" type="checkbox"> Axes</label>
+              <label><input v-model="rings3D.horizontal" type="checkbox"> Horizontal ring</label>
+              <label><input v-model="rings3D.transverse" type="checkbox"> Transverse ring (C0–C180)</label>
+              <label><input v-model="rings3D.longitudinal" type="checkbox"> Longitudinal ring (C90–C270)</label>
+              <label><input v-model="rings3D.maximum" type="checkbox" :disabled="!currentData"> Max plane ring</label>
+              <label><input v-model="show3DAngleMarkers" type="checkbox"> Angle markers</label>
+            </div>
+          </details>
         </div><small>Appearance</small></div>
         <div v-else-if="visualizationView === 'polar'" class="ribbon-group"><div class="ribbon-fields">
           <label>Plot <ThemedSelect label="Plot" v-model="selectedPlotMode" :options="[{label:'Polar',value:'polar'},{label:'Cartesian',value:'cartesian'}]" /></label>
@@ -764,7 +775,9 @@ onBeforeUnmount(() => {
             :data="currentData"
             :wireframe="wireframeMode"
             :show-axes="show3DAxes"
-            :show-rings="show3DRings"
+            :rings="rings3D"
+            :show-angle-markers="show3DAngleMarkers"
+            :max-plane-angle="rings3D.maximum ? plotData?.calculated.maxCandela.horizontalAngle : undefined"
           />
 
           <!-- 2D Polar & Cartesian Curves View -->

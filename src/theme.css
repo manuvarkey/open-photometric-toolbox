@@ -54,9 +54,14 @@
   --graph-bg: #24242d;
   --graph-grid: #474750;
   --graph-grid-soft: #383842;
-  --graph-curve-max: #fbbf24;
-  --graph-curve-0: #38bdf8;
-  --graph-curve-90: #f472b6;
+  --graph-curve-max: var(--guide-3d-maximum);
+  --graph-curve-0: var(--guide-3d-transverse);
+  --graph-curve-90: var(--guide-3d-longitudinal);
+  /* The 3D scene uses a dark background in both interface themes. */
+  --guide-3d-horizontal: #a1a1aa;
+  --guide-3d-transverse: #38bdf8;
+  --guide-3d-longitudinal: #f472b6;
+  --guide-3d-maximum: #fbbf24;
 
   color-scheme: dark;
   color: var(--text);

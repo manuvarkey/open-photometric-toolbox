@@ -1,6 +1,8 @@
 import { createCandelaSampler } from "../core/photometricSampling";
 import type { PhotometricData } from "../core/types";
 
+export const polarSpokeAngles = Array.from({ length: 24 }, (_, index) => index * 15);
+
 /** A physical C0/C180 cut; the opposite half is sampled rather than mirrored. */
 export function polarPath(data: PhotometricData | null, cx: number, cy: number, radius: number, maximum?: number): string {
   if (!data) return "";

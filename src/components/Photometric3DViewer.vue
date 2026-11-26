@@ -3,22 +3,38 @@ import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import * as THREE from "three";
 import { createCandelaSampler } from "../core/photometricSampling";
 import type { PhotometricData } from "../core/types";
+import { polarSpokeAngles } from "../utils/plotPaths";
+
+type RingPlane = "horizontal" | "transverse" | "longitudinal" | "maximum";
+interface AngleMarker {
+  plane: RingPlane;
+  angle: number;
+  point: THREE.Vector3;
+}
 
 const props = withDefaults(
   defineProps<{
     data: PhotometricData | null;
     wireframe?: boolean;
     showAxes?: boolean;
-    showRings?: boolean;
+    rings?: Record<RingPlane, boolean>;
+    showAngleMarkers?: boolean;
+    maxPlaneAngle?: number;
   }>(),
   {
     wireframe: false,
     showAxes: true,
-    showRings: true,
+    rings: () => ({ horizontal: true, transverse: false, longitudinal: false, maximum: false }),
+    showAngleMarkers: true,
   }
 );
 
 const canvasContainer = ref<HTMLDivElement>();
+const viewport = ref({ width: 0, height: 0 });
+const projectedMarkers = ref<{ plane: RingPlane; angle: number; x: number; y: number }[]>([]);
+const ringRadius = 5;
+const radians = Math.PI / 180;
+let angleMarkers: AngleMarker[] = [];
 let renderer: THREE.WebGLRenderer | null = null;
 let scene: THREE.Scene | null = null;
 let camera: THREE.PerspectiveCamera | null = null;
@@ -39,6 +55,7 @@ function initThree() {
 
   const width = canvasContainer.value.clientWidth;
   const height = canvasContainer.value.clientHeight;
+  viewport.value = { width, height };
 
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0x18181f);
@@ -89,6 +106,39 @@ function updateCamera() {
   const z = target.z + spherical.radius * Math.sin(spherical.theta) * Math.sin(spherical.phi);
   camera.position.set(x, y, z);
   camera.lookAt(target);
+  projectAngleMarkers();
+}
+
+function projectAngleMarkers() {
+  const { width, height } = viewport.value;
+  if (!camera || !width || !height || !angleMarkers.length) {
+    projectedMarkers.value = [];
+    return;
+  }
+  camera.updateMatrixWorld();
+  const projected: typeof projectedMarkers.value = [];
+  const point = new THREE.Vector3();
+  for (const marker of angleMarkers) {
+    point.copy(marker.point).project(camera);
+    const x = (point.x + 1) * width / 2;
+    const y = (1 - point.y) * height / 2;
+    if (point.z < -1 || point.z > 1 || x < 16 || x > width - 16 || y < 8 || y > height - 8) continue;
+    if (projected.some(label => Math.abs(label.x - x) < 26 && Math.abs(label.y - y) < 13)) continue;
+    projected.push({ plane: marker.plane, angle: marker.angle, x, y });
+  }
+  projectedMarkers.value = projected;
+}
+
+function disposeGeometry(object: THREE.Object3D) {
+  if (!(object instanceof THREE.Mesh || object instanceof THREE.Line)) return;
+  object.geometry.dispose();
+  const materials = Array.isArray(object.material) ? object.material : [object.material];
+  materials.forEach(material => material.dispose());
+}
+
+function clearGroup(group: THREE.Group) {
+  group.children.forEach(disposeGeometry);
+  group.clear();
 }
 
 // False-color turbo heatmap calculation
@@ -102,19 +152,9 @@ function getHeatmapColor(t: number): THREE.Color {
 }
 
 function rebuildMesh() {
-  if (!meshGroup || !props.data) return;
-
-  // Clear existing mesh
-  while (meshGroup.children.length > 0) {
-    const child = meshGroup.children[0] as THREE.Mesh;
-    child.geometry?.dispose();
-    if (Array.isArray(child.material)) {
-      child.material.forEach((m) => m.dispose());
-    } else {
-      child.material?.dispose();
-    }
-    meshGroup.remove(child);
-  }
+  if (!meshGroup) return;
+  clearGroup(meshGroup);
+  if (!props.data) return;
 
   const data = props.data;
   const sample = createCandelaSampler(data);
@@ -123,7 +163,6 @@ function rebuildMesh() {
   const candela = hAngles.map(h => vAngles.map(v => sample(v,h)));
 
   const maxVal = Math.max(1, data.calculated.maxCandela.intensity);
-  const scale = 5.0; // Visual radius units
 
   const numH = hAngles.length;
   const numV = vAngles.length;
@@ -139,7 +178,7 @@ function rebuildMesh() {
       const theta = (vAngles[v] * Math.PI) / 180;
       const intensity = candela[h][v];
       const norm = intensity / maxVal;
-      const r = norm * scale;
+      const r = norm * ringRadius;
 
       // Type C coordinate mapping:
       // theta = 0 (nadir) points straight down (-Y)
@@ -194,31 +233,54 @@ function rebuildMesh() {
   meshGroup.add(sourceMesh);
 }
 
+function ringPoint(radius: number, angle: number, cPlane?: number) {
+  const theta = angle * radians;
+  if (cPlane === undefined) {
+    return new THREE.Vector3(radius * Math.cos(theta), 0, radius * Math.sin(theta));
+  }
+  const phi = cPlane * radians;
+  const horizontal = radius * Math.sin(theta);
+  return new THREE.Vector3(horizontal * Math.cos(phi), -radius * Math.cos(theta), horizontal * Math.sin(phi));
+}
+
 function rebuildGrid() {
-  if (!gridGroup) return;
+  if (!gridGroup || !canvasContainer.value) return;
+  clearGroup(gridGroup);
+  angleMarkers = [];
 
-  while (gridGroup.children.length > 0) {
-    const child = gridGroup.children[0] as THREE.Line;
-    child.geometry?.dispose();
-    gridGroup.remove(child);
+  const styles = getComputedStyle(canvasContainer.value);
+  const rings: { plane: RingPlane; cPlane?: number }[] = [
+    { plane: "horizontal" },
+    { plane: "maximum", cPlane: props.maxPlaneAngle },
+    { plane: "transverse", cPlane: 0 },
+    { plane: "longitudinal", cPlane: 90 },
+  ];
+  const occupied = new Set<number>();
+  for (const { plane, cPlane } of rings) {
+    if (!props.rings[plane] || (plane === "maximum" && cPlane === undefined)) continue;
+    if (cPlane !== undefined) {
+      const orientation = (cPlane % 180 + 180) % 180;
+      if (occupied.has(orientation)) continue;
+      occupied.add(orientation);
+    }
+
+    const color = styles.getPropertyValue(`--guide-3d-${plane}`).trim();
+    const ring = Array.from({ length: 120 }, (_, index) => ringPoint(ringRadius, index * 3, cPlane));
+    const stroke = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.72 });
+    gridGroup.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(ring), stroke));
+
+    if (props.showAngleMarkers) {
+      const ticks = polarSpokeAngles.flatMap(angle => {
+        const radius = ringRadius + (angle % 45 === 0 ? 0.27 : 0.16);
+        angleMarkers.push({ plane, angle, point: ringPoint(ringRadius + 0.53, angle, cPlane) });
+        return [ringPoint(ringRadius, angle, cPlane), ringPoint(radius, angle, cPlane)];
+      });
+      const markerStroke = new THREE.LineBasicMaterial({ color });
+      gridGroup.add(new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(ticks), markerStroke));
+    }
   }
-
-  if (!props.showRings) return;
-
-  const ringRadius = 5.0;
-  const segments = 64;
-
-  // Equator / Horizontal 90-degree plane ring
-  const circleGeom = new THREE.BufferGeometry();
-  const circlePositions: number[] = [];
-  for (let i = 0; i <= segments; i++) {
-    const theta = (i * Math.PI * 2) / segments;
-    circlePositions.push(Math.cos(theta) * ringRadius, 0, Math.sin(theta) * ringRadius);
-  }
-  circleGeom.setAttribute("position", new THREE.Float32BufferAttribute(circlePositions, 3));
-  const ringMat = new THREE.LineBasicMaterial({ color: 0x474750, transparent: true, opacity: 0.6 });
-  const hRing = new THREE.Line(circleGeom, ringMat);
-  gridGroup.add(hRing);
+  // Keep the cardinal/diagonal labels first when several planes project close together.
+  angleMarkers.sort((a, b) => a.angle % 45 - b.angle % 45);
 
   // Cardinal direction axes
   if (props.showAxes) {
@@ -237,6 +299,7 @@ function rebuildGrid() {
     const axesMat = new THREE.LineBasicMaterial({ color: 0x606070, transparent: true, opacity: 0.5 });
     gridGroup.add(new THREE.LineSegments(axesGeom, axesMat));
   }
+  projectAngleMarkers();
 }
 
 let resizeObserver: ResizeObserver | undefined;
@@ -292,9 +355,12 @@ function setupInteractions() {
     if (!canvasContainer.value || !renderer || !camera) return;
     const w = canvasContainer.value.clientWidth;
     const h = canvasContainer.value.clientHeight;
+    if (!w || !h) return;
+    viewport.value = { width: w, height: h };
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
     renderer.setSize(w, h);
+    projectAngleMarkers();
   });
   resizeObserver.observe(el);
 }
@@ -315,9 +381,12 @@ watch(() => props.wireframe, () => {
   rebuildMesh();
 });
 
-watch(() => [props.showAxes, props.showRings], () => {
-  rebuildGrid();
-});
+watch(() => [
+  props.showAxes,
+  props.showAngleMarkers,
+  { ...props.rings },
+  props.maxPlaneAngle,
+], rebuildGrid);
 
 onMounted(() => {
   initThree();
@@ -327,12 +396,7 @@ onBeforeUnmount(() => {
   cancelAnimationFrame(animationFrameId);
   resizeObserver?.disconnect();
   window.removeEventListener("mouseup", stopDragging);
-  scene?.traverse(object => {
-    const mesh = object as THREE.Mesh;
-    mesh.geometry?.dispose();
-    const materials = mesh.material ? (Array.isArray(mesh.material) ? mesh.material : [mesh.material]) : [];
-    materials.forEach(material => material.dispose());
-  });
+  scene?.traverse(disposeGeometry);
   renderer?.dispose();
 });
 </script>
@@ -340,6 +404,23 @@ onBeforeUnmount(() => {
 <template>
   <div class="photometric-3d-wrapper">
     <div ref="canvasContainer" class="three-canvas"></div>
+    <svg
+      v-if="projectedMarkers.length"
+      class="angle-markers"
+      :viewBox="`0 0 ${viewport.width} ${viewport.height}`"
+      aria-hidden="true"
+    >
+      <text
+        v-for="marker in projectedMarkers"
+        :key="`${marker.plane}-${marker.angle}`"
+        :data-plane="marker.plane"
+        :fill="`var(--guide-3d-${marker.plane})`"
+        :x="marker.x"
+        :y="marker.y"
+        text-anchor="middle"
+        dominant-baseline="central"
+      >{{ marker.angle }}°</text>
+    </svg>
     <div class="viewport-overlay-controls">
       <button class="overlay-btn" aria-label="Reset View" title="Reset View" @click="resetView">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -370,6 +451,20 @@ onBeforeUnmount(() => {
 .three-canvas {
   width: 100%;
   height: 100%;
+}
+
+.angle-markers {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  font-size: var(--text-size-caption);
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: #18181f;
+  stroke-width: 3px;
+  stroke-linejoin: round;
 }
 
 .viewport-overlay-controls {

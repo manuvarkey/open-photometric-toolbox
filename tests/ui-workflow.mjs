@@ -41,7 +41,8 @@ try{
  }
  const p=await browser.newPage({viewport:{width:900,height:600}});p.on('pageerror',error=>errors.push(error.message));await p.goto('http://127.0.0.1:1420');await p.locator('.three-canvas canvas').waitFor();
  await p.getByText('Display',{exact:true}).click();await choose(p,'UI Scale','90%');await p.getByText('Scale: 90%',{exact:true}).waitFor();
- await p.getByText('Display',{exact:true}).click();await choose(p,'UI Scale','100%');await p.keyboard.press('Escape');
+ if(!await p.getByRole('combobox',{name:'UI Scale',exact:true}).isVisible())await p.getByText('Display',{exact:true}).click();
+ await choose(p,'UI Scale','100%');await p.keyboard.press('Escape');
  await p.locator('.app-container > input[type=file]').first().setInputFiles('tests/fixtures/ldt/symmetry-0.ldt');
  await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('symmetry-0.ldt'));
  await choose(p,'View','2D Candela Plot');await choose(p,'Plot','Cartesian');await choose(p,'Plane','0° Transverse');

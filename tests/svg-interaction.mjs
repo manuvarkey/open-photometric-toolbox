@@ -7,6 +7,31 @@ async function choose(page,label,name){await page.getByRole('combobox',{name:lab
 const results=[];
 try {
  const page=await browser.newPage({viewport:{width:1400,height:900}});await page.goto('http://127.0.0.1:1420');await page.locator('.three-canvas canvas').waitFor();
+ const markers=page.locator('.angle-markers');
+ const plane=name=>markers.locator(`[data-plane="${name}"]`);
+ await plane('horizontal').getByText('15°',{exact:true}).waitFor();
+ assert.equal(await markers.locator('text:not([data-plane="horizontal"])').count(),0);
+ await page.getByText('Overlays',{exact:true}).click();
+ const horizontal=page.getByRole('checkbox',{name:'Horizontal ring',exact:true});
+ const transverse=page.getByRole('checkbox',{name:'Transverse ring (C0–C180)',exact:true});
+ const longitudinal=page.getByRole('checkbox',{name:'Longitudinal ring (C90–C270)',exact:true});
+ const maximum=page.getByRole('checkbox',{name:'Max plane ring',exact:true});
+ const angles=page.getByRole('checkbox',{name:'Angle markers',exact:true});
+ assert.ok(await horizontal.isChecked()&&await angles.isChecked());
+ assert.ok(!await transverse.isChecked()&&!await longitudinal.isChecked()&&!await maximum.isChecked());
+ await transverse.check();await longitudinal.check();
+ await plane('transverse').first().waitFor();await plane('longitudinal').first().waitFor();
+ await angles.uncheck();await markers.waitFor({state:'detached'});
+ assert.ok(await transverse.isChecked()&&await longitudinal.isChecked());
+ await angles.check();await maximum.check();await plane('maximum').first().waitFor();
+ await maximum.uncheck();await plane('maximum').first().waitFor({state:'detached'});
+ await horizontal.uncheck();await plane('horizontal').first().waitFor({state:'detached'});
+ await horizontal.check();await page.keyboard.press('Escape');
+ const beforeOrbit=await plane('horizontal').first().getAttribute('x');
+ await page.locator('.three-canvas').hover();await page.mouse.down();await page.mouse.move(930,420,{steps:4});await page.mouse.up();
+ await page.waitForFunction(before=>document.querySelector('.angle-markers [data-plane="horizontal"]')?.getAttribute('x')!==before,beforeOrbit);
+ await page.getByRole('button',{name:'Reset View',exact:true}).click();
+ await page.screenshot({path:output+'/3d-ring-overlays.png'});
  await choose(page,'View','2D Candela Plot');
  for(const [mode,selector,width,height] of [['Polar','.polar-svg',500,500],['Cartesian','.cartesian-svg',640,400],['Iso-illuminance','.template-svg',600,600]]){
   if(mode==='Iso-illuminance')await choose(page,'View',mode);else await choose(page,'Plot',mode);

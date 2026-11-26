@@ -3,6 +3,7 @@ import { computed, ref, watch } from "vue";
 import PlotZoomControls from "./PlotZoomControls.vue";
 import { useSvgViewport } from "../composables/useSvgViewport";
 import { createCandelaSampler } from "../core/photometricSampling";
+import { polarSpokeAngles } from "../utils/plotPaths";
 import type { PhotometricData } from "../core/types";
 
 const props = withDefaults(
@@ -49,8 +50,7 @@ const rings = computed(() => [
   { val: Math.round(maxVal.value), r: rMax },
 ]);
 
-const angleLines = Array.from({ length: 24 }, (_, index) => {
-  const deg = index * 15;
+const angleLines = polarSpokeAngles.map(deg => {
   // Nadir is straight down in SVG coordinates.
   const rad = (deg * Math.PI) / 180 + Math.PI / 2;
   return {
