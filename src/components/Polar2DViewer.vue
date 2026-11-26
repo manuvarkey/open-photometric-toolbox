@@ -49,27 +49,22 @@ const rings = computed(() => [
   { val: Math.round(maxVal.value), r: rMax },
 ]);
 
-// Angle radial lines (0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180 deg)
-const angleLines = computed(() => {
-  const angles = [0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180];
-  return angles.map((deg) => {
-    // Nadir (0 deg) is straight down (angle = PI/2 in standard trig)
-    const rad = (deg * Math.PI) / 180 + Math.PI / 2;
-    return {
-      deg,
-      x: cx + rMax * Math.cos(rad),
-      y: cy + rMax * Math.sin(rad),
-      labelX: cx + (rMax + 16) * Math.cos(rad),
-      labelY: cy + (rMax + 16) * Math.sin(rad),
-    };
-  });
+const angleLines = Array.from({ length: 24 }, (_, index) => {
+  const deg = index * 15;
+  // Nadir is straight down in SVG coordinates.
+  const rad = (deg * Math.PI) / 180 + Math.PI / 2;
+  return {
+    deg,
+    x: cx + rMax * Math.cos(rad),
+    y: cy + rMax * Math.sin(rad),
+    labelX: cx + (rMax + 16) * Math.cos(rad),
+    labelY: cy + (rMax + 16) * Math.sin(rad),
+  };
 });
 
-// Convert (vertical_angle, candela) to (x, y) coordinates for Polar
-function polarToCartesian(vDeg: number, cd: number, sign: 1 | -1 = 1) {
+function polarToCartesian(angle: number, cd: number) {
   const radius = (cd / maxVal.value) * rMax;
-  // sign: 1 for right hemisphere (0 to 180), -1 for left hemisphere
-  const rad = ((vDeg * sign) * Math.PI) / 180 + Math.PI / 2;
+  const rad = (angle * Math.PI) / 180 + Math.PI / 2;
   return {
     x: cx + radius * Math.cos(rad),
     y: cy + radius * Math.sin(rad),
@@ -86,11 +81,8 @@ const padB = 50;
 const plotW = cartWidth - padL - padR;
 const plotH = cartHeight - padT - padB;
 
-const maxVAngle = computed(() => {
-  if (!props.data) return 180;
-  const v = props.data.verticalAngles;
-  return v[v.length - 1] > 90 ? 180 : 90;
-});
+const fullCircle = 360;
+const cartX = (angle: number) => padL + (angle / fullCircle) * plotW;
 
 const cartYTicks = computed(() => {
   return [
@@ -102,33 +94,45 @@ const cartYTicks = computed(() => {
   ];
 });
 
-const cartXTicks = computed(() => {
-  const step = maxVAngle.value === 180 ? 30 : 15;
-  const ticks = [];
-  for (let a = 0; a <= maxVAngle.value; a += step) {
-    const x = padL + (a / maxVAngle.value) * plotW;
-    ticks.push({ angle: a, x });
-  }
-  return ticks;
+const cartXTicks = Array.from({ length: 13 }, (_, index) => {
+  const angle = index * 30;
+  return { angle, x: cartX(angle) };
 });
 
-// Generate paths for both Polar and Cartesian
 const sampler = computed(() => props.data ? createCandelaSampler(props.data) : null);
+// A full cut uses the selected C-plane to zenith and the opposite C-plane back to nadir.
+function samplePlane(angle: number, cPlane: number) {
+  return angle <= 180
+    ? sampler.value?.(angle, cPlane) ?? 0
+    : sampler.value?.(fullCircle - angle, cPlane + 180) ?? 0;
+}
+
 const allCurves = computed(() => {
   if (!props.data || !sampler.value) return [];
-  const sample = sampler.value;
   const maximumPlane = props.data.calculated.maxCandela.horizontalAngle;
-  const angles = Array.from({length: maxVAngle.value / 2.5 + 1}, (_,i) => i*2.5);
+  const angles = new Set(Array.from({ length: fullCircle / 2.5 + 1 }, (_, index) => index * 2.5));
+  const measured = props.data.verticalAngles;
+  for (const gamma of [...measured, measured[0] - 0.001, measured[measured.length - 1] + 0.001]) {
+    if (gamma < 0 || gamma > 180) continue;
+    angles.add(gamma);
+    angles.add(fullCircle - gamma);
+  }
+  const orderedAngles = [...angles].sort((a, b) => a - b);
   return [
     {id:'max', name:`Max Plane (${maximumPlane}°)`, cPlane:maximumPlane, color:'var(--graph-curve-max)', dash:''},
     {id:'0', name:'0° Transverse', cPlane:0, color:'var(--graph-curve-0)', dash:'5,3'},
     {id:'90', name:'90° Longitudinal', cPlane:90, color:'var(--graph-curve-90)', dash:'2,2'}
   ].map(plane => {
-    const points = angles.map(angle => polarToCartesian(angle, sample(angle,plane.cPlane),1));
-    const opposite = [...angles].reverse().map(angle => polarToCartesian(angle,sample(angle,(plane.cPlane+180)%360),-1));
-    const polarPath = [...points,...opposite].map((p,i) => `${i?'L':'M'} ${p.x.toFixed(2)} ${p.y.toFixed(2)}`).join(' ')+' Z';
-    const cartPath = angles.map((angle,i) => `${i?'L':'M'} ${(padL+angle/maxVAngle.value*plotW).toFixed(2)} ${(padT+(1-sample(angle,plane.cPlane)/maxVal.value)*plotH).toFixed(2)}`).join(' ');
-    return {...plane,polarPath,cartPath,peakCd:Math.round(Math.max(...angles.map(angle=>sample(angle,plane.cPlane))))};
+    const values = orderedAngles.map(angle => ({ angle, cd: samplePlane(angle, plane.cPlane) }));
+    const polarPath = values.map(({ angle, cd }, index) => {
+      const { x, y } = polarToCartesian(angle, cd);
+      return `${index ? "L" : "M"} ${x.toFixed(2)} ${y.toFixed(2)}`;
+    }).join(" ") + " Z";
+    const cartPath = values.map(({ angle, cd }, index) =>
+      `${index ? "L" : "M"} ${cartX(angle).toFixed(2)} ${(padT + (1 - cd / maxVal.value) * plotH).toFixed(2)}`
+    ).join(" ");
+    const peakCd = Math.round(values.reduce((peak, { cd }) => Math.max(peak, cd), 0));
+    return { ...plane, polarPath, cartPath, peakCd };
   });
 });
 
@@ -151,11 +155,14 @@ function handleCartesianMouseMove(e: PointerEvent) {
 
   // Fraction of X axis
   const fracX = (mouseX - padL) / plotW;
-  const angle = Math.round(fracX * maxVAngle.value);
+  const angle = Math.round(fracX * fullCircle);
 
   const activeCurve = visibleCurves.value[0] || allCurves.value[0];
-  const cd = Math.round(sampler.value?.(angle, activeCurve.cPlane) ?? 0);
-  hoveredPoint.value = {angle, cd, plane:activeCurve.name, x:padL+angle/maxVAngle.value*plotW, y:padT+(1-cd/maxVal.value)*plotH};
+  const cd = samplePlane(angle, activeCurve.cPlane);
+  const plane = angle > 180 && angle < 360
+    ? `C${(activeCurve.cPlane + 180) % 360}° (Opposite plane)`
+    : activeCurve.name;
+  hoveredPoint.value = { angle, cd: Math.round(cd), plane, x: cartX(angle), y: padT + (1 - cd / maxVal.value) * plotH };
 }
 
 function handleCartesianMouseLeave() {
@@ -321,7 +328,7 @@ function handleCartesianMouseLeave() {
               text-anchor="middle"
               class="axis-title"
             >
-              Vertical Angle (0° = Nadir, 90° = Horizontal, 180° = Zenith)
+              Angle Around Plane (0° / 360° = Nadir, 180° = Zenith)
             </text>
 
             <text
@@ -452,7 +459,7 @@ function handleCartesianMouseLeave() {
   background: transparent;
   border: none;
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   padding: 4px 12px;
   border-radius: 3px;
@@ -482,7 +489,7 @@ function handleCartesianMouseLeave() {
 }
 
 .switcher-label {
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   font-weight: 600;
   margin-right: 2px;
@@ -495,7 +502,7 @@ function handleCartesianMouseLeave() {
   background: var(--well);
   border: 1px solid var(--line);
   color: var(--text);
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   padding: 3px 8px;
   border-radius: 3px;
   cursor: pointer;
@@ -579,7 +586,7 @@ function handleCartesianMouseLeave() {
 
 .ring-text,
 .axis-tick-label {
-  font-size: 10px;
+  font-size: var(--text-size-caption);
   fill: var(--muted);
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;
@@ -587,20 +594,20 @@ function handleCartesianMouseLeave() {
 }
 
 .spoke-text {
-  font-size: 10px;
+  font-size: var(--text-size-caption);
   fill: var(--text);
   font-weight: 600;
 }
 
 .axis-title {
-  font-size: 11px;
+  font-size: var(--text-size-caption);
   fill: var(--text);
   font-weight: 600;
   letter-spacing: 0.02em;
 }
 
 .tooltip-text-primary {
-  font-size: 11px;
+  font-size: var(--text-size-caption);
   font-weight: 700;
   fill: var(--text);
   font-family: var(--ui-font-family);
@@ -608,7 +615,7 @@ function handleCartesianMouseLeave() {
 }
 
 .tooltip-text-secondary {
-  font-size: 9.5px;
+  font-size: var(--text-size-caption);
   fill: var(--muted);
   font-weight: 500;
 }
@@ -631,7 +638,7 @@ function handleCartesianMouseLeave() {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--text);
   padding: 2px 6px;
   border-radius: 3px;
@@ -652,7 +659,7 @@ function handleCartesianMouseLeave() {
 .legend-val {
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
 }
 </style>

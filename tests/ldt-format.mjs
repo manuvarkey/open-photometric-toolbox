@@ -80,7 +80,7 @@ const { outputFiles } = await build({
     assert.throws(()=>parseEULUMDAT(change(source(0),33,1.1)),/direct ratio/);
     assert.throws(()=>parseEULUMDAT(source(0).trimEnd().split('\n').slice(0,-1).join('\n')),/incomplete intensity/);
     assert.throws(()=>parseEULUMDAT(source(0)+'1\n'),/unexpected extra/);
-    assert.throws(()=>parseEULUMDAT(source(0).replace(/40\n0\n$/,'-40\n0\n')),/negative/);
+    assert.throws(()=>parseEULUMDAT(source(0).replace(/40(\r?\n0\r?\n)$/,'-40$1')),/negative/);
     const invalidAngles=change(source(0),44,0);assert.throws(()=>parseEULUMDAT(invalidAngles),/strictly increasing/);
     // Earlier application exports omitted three luminous heights. Never infer
     // shifted fields and silently produce a plausible but wrong luminaire.

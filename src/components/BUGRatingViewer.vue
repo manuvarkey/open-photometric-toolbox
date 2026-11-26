@@ -99,7 +99,7 @@ defineProps<{
   padding: 3px 10px;
   border-radius: 4px;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: var(--text-size-ui);
   letter-spacing: 0.05em;
 }
 
@@ -121,13 +121,13 @@ defineProps<{
 }
 
 .rating-box .score {
-  font-size: 1.8rem;
+  font-size: var(--text-size-rating);
   font-weight: 800;
   color: var(--accent, #fbbf24);
 }
 
 .rating-box .sub {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #bebdbd);
   text-transform: uppercase;
   margin-top: 2px;
@@ -138,7 +138,7 @@ defineProps<{
 }
 
 .zones-breakdown h4 {
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   color: var(--text, #edebe8);
   margin-bottom: 12px;
   font-weight: 600;
@@ -158,7 +158,7 @@ defineProps<{
 }
 
 .zone-col h5 {
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   color: var(--hint, #a7a7a8);
   text-transform: uppercase;
   margin-bottom: 8px;
@@ -169,7 +169,7 @@ defineProps<{
 .kv {
   display: flex;
   justify-content: space-between;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   padding: 3px 0;
   color: var(--muted, #bebdbd);
 }

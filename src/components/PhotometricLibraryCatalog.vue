@@ -270,11 +270,11 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
 }
 
 .count-badge {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   background: var(--hover, #33333d);
   color: var(--text-soft, #d4d4d8);
   padding: 2px 8px;
@@ -313,7 +313,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   background: transparent;
   border: none;
   color: var(--text, #edebe8);
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   outline: none;
 }
 
@@ -321,7 +321,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   background: none;
   border: none;
   color: var(--muted, #a1a1aa);
-  font-size: 1.1rem;
+  font-size: var(--text-size-heading);
   cursor: pointer;
   padding: 0 4px;
 }
@@ -341,7 +341,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   background: var(--well, #2a2a32);
   border: 1px solid var(--line-soft, #3d3d46);
   color: var(--text-soft, #d4d4d8);
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   padding: 3px 10px;
   border-radius: 14px;
   cursor: pointer;
@@ -363,7 +363,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
 }
 
@@ -373,7 +373,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   color: var(--text, #edebe8);
   padding: 3px 8px;
   border-radius: 4px;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   outline: none;
 }
 
@@ -429,14 +429,14 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
 
 .lum-title {
   font-weight: 600;
-  font-size: 0.88rem;
+  font-size: var(--text-size-ui);
   color: var(--text, #edebe8);
 }
 
 .cat-badge {
   background: var(--line, #383842);
   color: var(--accent, #d97706);
-  font-size: 0.7rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   text-transform: uppercase;
   padding: 2px 6px;
@@ -444,7 +444,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
 }
 
 .card-meta-line {
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
   display: flex;
   align-items: center;
@@ -467,7 +467,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   border: 1px solid var(--line-soft, #3d3d46);
   padding: 2px 8px;
   border-radius: 3px;
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   display: flex;
   gap: 4px;
   align-items: baseline;
@@ -498,7 +498,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
 }
 
 .footer-note {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--hint, #71717a);
 }
 
@@ -518,7 +518,7 @@ function getThumbnailPath(data: PhotometricData) { return polarPath(data, 36, 36
   gap: 6px;
   padding: 5px 12px;
   border-radius: var(--control-radius, 4px);
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;

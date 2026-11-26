@@ -19,17 +19,20 @@ async function layout(p,name){
 try{
  for(const [width,height] of [[1400,900],[900,600]])for(const theme of ['dark','light'])for(const scale of ['100%','130%']){
   const p=await browser.newPage({viewport:{width,height}});p.on('pageerror',error=>errors.push(error.message));await p.goto('http://127.0.0.1:1420');await p.locator('.three-canvas canvas').waitFor();
-  if(theme==='light'){await p.getByText('Display',{exact:true}).click();await p.getByRole('button',{name:'Theme: Dark',exact:true}).click();}
+  const currentTheme=await p.locator('html').getAttribute('data-theme');
+  if(theme!==currentTheme){await p.getByText('Display',{exact:true}).click();await p.getByRole('button',{name:`Theme: ${currentTheme==='dark'?'Dark':'Light'}`,exact:true}).click();}
   await p.getByText('Display',{exact:true}).click();await choose(p,'UI Scale',scale);await p.keyboard.press('Escape');
   const id=width+'x'+height+'-'+theme+'-'+scale.replace('%','');
   await layout(p,id+'-3d');
-  await choose(p,'View','2D Candela Plot');await choose(p,'Plot','Cartesian');await choose(p,'Plane','90° Longitudinal');await p.locator('.cartesian-svg').waitFor();await layout(p,id+'-cartesian');
+  await choose(p,'View','2D Candela Plot');await p.locator('.polar-svg').waitFor();assert.equal(await p.locator('.polar-svg .spoke-text').count(),24);
+  await choose(p,'Plot','Cartesian');await choose(p,'Plane','90° Longitudinal');await p.locator('.cartesian-svg').getByText('360°',{exact:true}).waitFor();await layout(p,id+'-cartesian');
   await choose(p,'View','Iso-illuminance');await p.locator('.template-svg').waitFor();assert.equal(await p.locator('.canvas-container canvas').count(),0);assert.equal(await p.locator('.template-svg path').count(),10);await layout(p,id+'-iso');
   await p.getByRole('tab',{name:'Compare',exact:true}).click();await p.locator('.compare-container').waitFor();assert.equal(await p.locator('.ribbon [role=combobox]').count(),2);await choose(p,'Luminaire A',/Architectural_Floodlight/);await choose(p,'Luminaire B',/Commercial_Downlight_40W.ies ·/);await layout(p,id+'-compare');
-  await p.getByRole('tab',{name:'Reports',exact:true}).click();await p.getByRole('combobox',{name:'Report Type',exact:true}).waitFor();await choose(p,'Report Type','Roadway');await layout(p,id+'-report');
+  await p.getByRole('tab',{name:'Reports',exact:true}).click();await p.getByRole('group',{name:'Report Type',exact:true}).getByRole('button',{name:'Roadway',exact:true}).click();await layout(p,id+'-report');
   if(width===900&&scale==='130%')await p.screenshot({path:output+'/'+id+'-reports.png'});
-  for(const [tab,button] of [['File','New Luminaire'],['File','Edit Luminaire'],['File','Library'],['Analyze','CIE Classification']]){
-   await p.getByRole('tab',{name:tab,exact:true}).click();await command(p,button);const dialog=p.getByRole('dialog');await dialog.waitFor();await p.waitForFunction(()=>Boolean(document.querySelector('[role=dialog]')?.contains(document.activeElement)));
+  await p.getByRole('tab',{name:'Analyze',exact:true}).click();await choose(p,'View','CIE Classification');await p.getByRole('heading',{name:'CIE Luminaire Classification & Flux Code'}).waitFor();assert.equal(await p.getByRole('dialog').count(),0);await layout(p,id+'-cie');
+  for(const button of ['New Luminaire','Edit Luminaire','Library']){
+   await p.getByRole('tab',{name:'File',exact:true}).click();await command(p,button);const dialog=p.getByRole('dialog');await dialog.waitFor();await p.waitForFunction(()=>Boolean(document.querySelector('[role=dialog]')?.contains(document.activeElement)));
    await p.keyboard.press('Shift+Tab');assert.ok(await dialog.evaluate(el=>el.contains(document.activeElement)));await p.keyboard.press('Tab');assert.ok(await dialog.evaluate(el=>el.contains(document.activeElement)));await layout(p,id+'-'+button);
    if(button==='New Luminaire'){await choose(p,'Units','Metres');assert.ok(await dialog.isVisible(),'select Escape must not dismiss its dialog');}
    await p.keyboard.press('Escape');await dialog.waitFor({state:'detached'});
@@ -37,6 +40,15 @@ try{
   matrix.push(id);await p.close();console.log('Layout',id);
  }
  const p=await browser.newPage({viewport:{width:900,height:600}});p.on('pageerror',error=>errors.push(error.message));await p.goto('http://127.0.0.1:1420');await p.locator('.three-canvas canvas').waitFor();
+ await p.locator('.app-container > input[type=file]').first().setInputFiles('tests/fixtures/ldt/symmetry-0.ldt');
+ await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('symmetry-0.ldt'));
+ await choose(p,'View','2D Candela Plot');await choose(p,'Plot','Cartesian');await choose(p,'Plane','0° Transverse');
+ const cartesian=p.locator('.cartesian-svg');await cartesian.waitFor();
+ for(const [angle,candela] of [[90,10],[270,30]]){
+  const point=await cartesian.evaluate((el,angle)=>new DOMPoint(70+angle/360*540,120).matrixTransform(el.getScreenCTM()).toJSON(),angle);
+  await p.mouse.move(point.x,point.y);assert.match(await cartesian.locator('.tooltip-text-primary').textContent(),new RegExp(`${angle}°: ${candela} cd`));
+ }
+ checks.push('Cartesian plot samples the opposite C-plane of an asymmetric luminaire');
  await p.locator('.app-container > input[type=file]').first().setInputFiles('tests/fixtures/ldt/symmetry-3.ldt');await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('symmetry-3.ldt'));
  assert.match(await p.locator('.status-bar').innerText(),/symmetry-3.ldt/);
  await p.getByRole('tab',{name:'File',exact:true}).click();let download=p.waitForEvent('download');await command(p,'Export LDT');let text=await fs.readFile(await(await download).path(),'utf8');assert.match(text,/SYM-3/);checks.push('Native format dispatch and LDT re-export metadata');
@@ -50,13 +62,25 @@ try{
  // Test browser font enumeration with a controlled permission-success response; native enumeration is verified separately.
  await p.evaluate(()=>{window.queryLocalFonts=async()=>[{family:'DejaVu Serif'},{family:'DejaVu Sans'}]});
  await p.getByRole('tab',{name:'Reports',exact:true}).click();await p.getByRole('button',{name:'Load system fonts',exact:true}).click();await choose(p,'Report Font','DejaVu Serif');assert.match(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).fontFamily),/DejaVu Serif/);
- for(const type of ['Indoor','Roadway','Floodlight']){await choose(p,'Report Type',type);download=p.waitForEvent('download');await p.getByRole('button',{name:'Export HTML Report',exact:true}).click();text=await fs.readFile(await(await download).path(),'utf8');assert.match(text,/DejaVu Serif/);assert.match(text,/<svg/);assert.doesNotMatch(text,/<script|<link[^>]+href=/i);await p.pdf({path:output+'/'+type.toLowerCase()+'.pdf',format:'A4',printBackground:true});}
+ await p.waitForFunction(()=>Number(getComputedStyle(document.querySelector('.report-paper')).zoom)<1);
+ const fitZoom=Number(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).zoom));
+ await p.getByRole('separator',{name:'Resize Luminaire Inspector'}).press('End');
+ await p.waitForFunction(fitZoom=>Number(getComputedStyle(document.querySelector('.report-paper')).zoom)<fitZoom,fitZoom);
+ await p.getByRole('separator',{name:'Resize Luminaire Inspector'}).press('Home');
+ await choose(p,'Report Zoom','150%');assert.equal(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).zoom),'1.5');
+ await p.emulateMedia({media:'print'});assert.equal(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).zoom),'1');await p.emulateMedia({media:'screen'});
+ for(const type of ['Indoor','Roadway','Floodlight']){await p.getByRole('group',{name:'Report Type',exact:true}).getByRole('button',{name:type,exact:true}).click();download=p.waitForEvent('download');await p.getByRole('button',{name:'Export HTML Report',exact:true}).click();text=await fs.readFile(await(await download).path(),'utf8');assert.match(text,/DejaVu Serif/);assert.match(text,/<svg/);assert.doesNotMatch(text,/<script|<link[^>]+href=|report-preview-zoom/i);await p.pdf({path:output+'/'+type.toLowerCase()+'.pdf',format:'A4',printBackground:true});}
  // Manufacturer identifiers may contain long strings without spaces.
  const longMetadata=(await fs.readFile('tests/fixtures/ldt/symmetry-3.ldt','utf8')).replace('Test LED','Luminaire_Manufacturer_Model_'.repeat(8));
  await p.locator('input[type=file]').first().setInputFiles({name:'long-metadata.ldt',mimeType:'text/plain',buffer:Buffer.from(longMetadata)});await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('long-metadata.ldt'));
  const columns=await p.locator('.report-paper .meta-col').evaluateAll(nodes=>nodes.map(n=>n.getBoundingClientRect().width));assert.ok(Math.max(...columns)-Math.min(...columns)<2,'Long identifiers must not collapse metadata columns');checks.push('Long report metadata wraps within equal columns');
+ const divider=await p.getByRole('separator',{name:'Resize Luminaire Inspector'}).boundingBox();const x=divider.x+divider.width/2;const y=divider.y+30;
+ const splitter=p.getByRole('separator',{name:'Resize Luminaire Inspector'});const initialWidth=Number(await splitter.getAttribute('aria-valuenow'));
+ await p.mouse.move(x,y);await p.mouse.down();await p.mouse.move(x+50,y,{steps:5});await p.mouse.up();assert.equal(Number(await splitter.getAttribute('aria-valuenow')),initialWidth+50);
+ await splitter.press('Home');assert.equal(await splitter.getAttribute('aria-valuenow'),await splitter.getAttribute('aria-valuemin'));
+ await p.getByText('Identity & Source',{exact:true}).click();const longValue=p.locator('.side-inspector .data-kv .v').filter({hasText:'Luminaire_Manufacturer_Model_'});assert.ok(await longValue.evaluate(el=>el.scrollWidth<=el.clientWidth));
  const uiFont=await p.locator('.ribbon-tabs > button').first().evaluate(el=>getComputedStyle(el).fontFamily);assert.equal(uiFont,await p.locator('html').evaluate(el=>getComputedStyle(el).fontFamily));checks.push('Report font reaches all three HTML/PDF outputs without changing UI fonts');
- await p.getByRole('tab',{name:'Visualize',exact:true}).click();await p.getByRole('tab',{name:'Reports',exact:true}).click();assert.match(await p.getByRole('combobox',{name:'Report Font',exact:true}).innerText(),/DejaVu Serif/);checks.push('Report settings persist across view changes');
+ await p.getByRole('tab',{name:'Visualize',exact:true}).click();await p.getByRole('tab',{name:'Reports',exact:true}).click();assert.match(await p.getByRole('combobox',{name:'Report Font',exact:true}).innerText(),/DejaVu Serif/);assert.match(await p.getByRole('combobox',{name:'Report Zoom',exact:true}).innerText(),/150%/);checks.push('Report settings persist across view changes');
  // Exercise preset generation through its real UI, including signed Type B output.
  await p.getByRole('tab',{name:'File',exact:true}).click();
  for(const preset of ['LED Downlight','Office Batwing','UFO High Bay','NEMA Floodlight','Direct / Indirect','Asymmetric Wall Wash']){

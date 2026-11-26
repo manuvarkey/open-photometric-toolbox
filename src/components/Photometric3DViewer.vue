@@ -413,7 +413,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 8px;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #bebdbd);
   backdrop-filter: blur(4px);
   z-index: 10;

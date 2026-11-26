@@ -4,17 +4,22 @@
 :root {
   font: menu;
   --ui-font-family: system-ui;
-  --ui-font-size: 13px;
+  --ui-font-size-default: 13px;
+  --ui-font-size: var(--ui-font-size-default);
   --table-font-family: var(--ui-font-family);
   --table-font-size: var(--ui-font-size);
   font-family: var(--ui-font-family);
   font-size: var(--ui-font-size);
   --text-size-ui: 1rem;
-  --text-size-small: .9rem;
+  --text-size-caption: 0.85rem;
   --toolbar-icon: var(--muted);
-  --text-size-toolbar: 0.95rem;
   --text-size-heading: 1.1rem;
+  --text-size-display: 1.25rem;
+  --text-size-rating: 1.8rem;
   --text-size-table: var(--table-font-size);
+  --report-size-caption: 10px;
+  --report-size-body: 11px;
+  --report-size-title: 18px;
   --table-line-height: 1.35;
   --focus-width: 2px;
   --control-radius: 4px;

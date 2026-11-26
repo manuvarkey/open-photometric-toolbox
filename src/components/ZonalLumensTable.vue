@@ -77,7 +77,7 @@ defineProps<{
 }
 
 .total-tag {
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--accent, #fbbf24);
   font-weight: 500;
 }
@@ -89,7 +89,7 @@ defineProps<{
 .zonal-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
 }
 
 .zonal-table th {

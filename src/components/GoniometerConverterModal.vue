@@ -176,7 +176,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
 }
 
 .modal-body {
@@ -208,7 +208,7 @@ async function downloadConverted(format: "ies" | "ldt") {
 }
 
 .config-item label {
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
   font-weight: 500;
 }
@@ -219,7 +219,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   border: 1px solid var(--line, #383842);
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   font-weight: 600;
 }
 
@@ -229,7 +229,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   color: var(--text, #edebe8);
   padding: 6px 10px;
   border-radius: 4px;
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   font-weight: 500;
   outline: none;
 }
@@ -243,7 +243,7 @@ async function downloadConverted(format: "ies" | "ldt") {
 }
 
 .subtext {
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   color: var(--hint, #71717a);
 }
 
@@ -255,7 +255,7 @@ async function downloadConverted(format: "ies" | "ldt") {
 }
 
 .settings-title {
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   margin-bottom: 8px;
   color: var(--text-soft, #d4d4d8);
@@ -271,7 +271,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--text, #edebe8);
   cursor: pointer;
 }
@@ -281,7 +281,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   border: 1px solid var(--line-soft, #3d3d46);
   border-radius: 4px;
   padding: 12px;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
   line-height: 1.5;
 }
@@ -314,7 +314,7 @@ async function downloadConverted(format: "ies" | "ldt") {
   gap: 6px;
   padding: 6px 14px;
   border-radius: var(--control-radius, 4px);
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;

@@ -10,6 +10,7 @@ import { useLuminaireCatalog } from "./composables/useLuminaireCatalog";
 import { parsePhotometric } from "./core/photometricParser";
 import { readPhotometricText, savePhotometricText } from "./services/photometricFiles";
 import { initializeInterfaceTypography } from "./services/interfaceTypography";
+import { listSystemFonts, nativeFonts } from "./services/systemFonts";
 import { toTypeCData } from "./core/goniometerConversion";
 // Keep shell settings available while optional tool chunks load or fail.
 function lazyTool(loader: AsyncComponentLoader) {
@@ -24,7 +25,7 @@ function lazyTool(loader: AsyncComponentLoader) {
   });
 }
 const BUGRatingViewer = lazyTool(() => import("./components/BUGRatingViewer.vue"));
-const CIEClassificationModal = lazyTool(() => import("./components/CIEClassificationModal.vue"));
+const CIEClassificationViewer = lazyTool(() => import("./components/CIEClassificationViewer.vue"));
 const CUTableViewer = lazyTool(() => import("./components/CUTableViewer.vue"));
 const GoniometerConverterModal = lazyTool(() => import("./components/GoniometerConverterModal.vue"));
 const IsoIlluminanceViewer = lazyTool(() => import("./components/IsoIlluminanceViewer.vue"));
@@ -42,14 +43,13 @@ import { serializeIES } from "./core/iesParser";
 import type { PhotometricData } from "./core/types";
 
 type RibbonTab = "file" | "visualize" | "analysis" | "compare" | "reports";
+type AnalysisView = "zonal" | "bug" | "cu" | "cie";
 
 type ViewportMode =
   | "3d"
   | "polar"
   | "template"
-  | "zonal"
-  | "bug"
-  | "cu"
+  | AnalysisView
   | "reports"
   | "compare";
 
@@ -60,30 +60,99 @@ const { selectionA, selectionB, primary: comparisonPrimaryData, secondary: compa
 const comparisonTarget = ref<"A" | "B">("B");
 const catalogTarget = ref<"workspace" | "A" | "B">("workspace");
 const reportFont = ref("system-ui");
+const reportFonts = ref<string[]>([]);
+const reportFontMessage = ref("");
+const reportFontsLoading = ref(false);
+const reportFontOptions = computed(() => [
+  { label: "System default", value: "system-ui" },
+  ...reportFonts.value.map(family => ({ label: family, value: family })),
+]);
+const reportViewer = ref<{ printReport: () => Promise<void>; downloadHtmlReport: () => Promise<void> }>();
+const reportZoom = ref<number | "fit">("fit");
+const reportZoomOptions = [
+  { label: "Fit width", value: "fit" },
+  ...[50, 75, 100, 125, 150, 200].map(value => ({ label: `${value}%`, value })),
+];
+async function loadReportFonts() {
+  reportFontsLoading.value = true;
+  try {
+    reportFonts.value = await listSystemFonts();
+    reportFontMessage.value = `${reportFonts.value.length} installed font families`;
+  } catch (error) {
+    reportFontMessage.value = error instanceof Error ? error.message : String(error);
+  } finally {
+    reportFontsLoading.value = false;
+  }
+}
+
 const plotData = computed(() => currentData.value ? toTypeCData(currentData.value) : null);
 const reportType = ref<"indoor" | "roadway" | "floodlight">("indoor");
+const reportTypes = [
+  { label: "Indoor", value: "indoor" },
+  { label: "Roadway", value: "roadway" },
+  { label: "Floodlight", value: "floodlight" },
+] as const;
 const currentFileName = ref("Commercial_Downlight_40W.ies");
 const activeRibbonTab = ref<RibbonTab>("visualize");
 const activeView = ref<ViewportMode>("3d");
 const showInspector = ref(true);
+const workspace = ref<HTMLElement>();
+const workspaceWidth = ref(window.innerWidth);
+const inspectorWidth = ref<number>();
+const minInspectorWidth = 180;
+const maxInspectorWidth = computed(() => Math.max(minInspectorWidth, Math.min(520, Math.floor(workspaceWidth.value * 0.55))));
+const actualInspectorWidth = computed(() => Math.min(maxInspectorWidth.value, Math.max(
+  minInspectorWidth,
+  inspectorWidth.value ?? Math.min(320, Math.round(workspaceWidth.value * 0.24)),
+)));
+let inspectorDrag: { pointerId: number; x: number; width: number } | undefined;
+let workspaceObserver: ResizeObserver | undefined;
 const visualizationView = ref<"3d" | "polar" | "template">("3d");
-const analysisView = ref<"zonal" | "bug" | "cu">("zonal");
+const analysisView = ref<AnalysisView>("zonal");
 const illuminanceUnits = ref<"fc" | "lux">("fc");
 const mountingHeight = ref(8);
 const statusMessage = ref("Ready");
 const showStatusBar = ref(true);
 const showAboutModal = ref(false);
 const showEditorModal = ref(false);
-const showCIEModal = ref(false);
 const showConverterModal = ref(false);
 const showNewLuminaireModal = ref(false);
 const showCatalogModal = ref(false);
 const selectedPolarPlane = ref<"all" | "max" | "0" | "90">("all");
 const selectedPlotMode = ref<"polar" | "cartesian">("polar");
 const uiScale = ref(1.0);
-const theme = ref<"dark" | "light">("dark");
+const theme = ref<"dark" | "light">("light");
 const fileInput = ref<HTMLInputElement>();
 const compareInput = ref<HTMLInputElement>();
+
+function resizeInspector(width: number) {
+  inspectorWidth.value = Math.min(maxInspectorWidth.value, Math.max(minInspectorWidth, Math.round(width)));
+}
+function startInspectorResize(event: PointerEvent) {
+  if (!event.isPrimary || event.button !== 0) return;
+  const handle = event.currentTarget as HTMLElement;
+  handle.focus();
+  handle.setPointerCapture(event.pointerId);
+  inspectorDrag = { pointerId: event.pointerId, x: event.clientX, width: actualInspectorWidth.value };
+}
+function moveInspectorResize(event: PointerEvent) {
+  if (inspectorDrag?.pointerId !== event.pointerId) return;
+  resizeInspector(inspectorDrag.width + (event.clientX - inspectorDrag.x) / uiScale.value);
+}
+function endInspectorResize(event: PointerEvent) {
+  if (inspectorDrag?.pointerId === event.pointerId) inspectorDrag = undefined;
+}
+function resizeInspectorWithKeys(event: KeyboardEvent) {
+  const widths: Record<string, number> = {
+    ArrowLeft: actualInspectorWidth.value - 16,
+    ArrowRight: actualInspectorWidth.value + 16,
+    Home: minInspectorWidth,
+    End: maxInspectorWidth.value,
+  };
+  if (!Object.hasOwn(widths, event.key)) return;
+  event.preventDefault();
+  resizeInspector(widths[event.key]);
+}
 async function chooseCompareFile(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
@@ -130,9 +199,12 @@ function selectRibbonTab(tab: RibbonTab) {
   if (tab === "visualize") activeView.value = visualizationView.value;
   else if (tab === "analysis") activeView.value = analysisView.value;
   else if (tab === "reports" || tab === "compare") activeView.value = tab;
+  if (tab === "reports" && nativeFonts() && !reportFontsLoading.value && !reportFonts.value.length) {
+    void loadReportFonts();
+  }
 }
 function selectView(view: "3d" | "polar" | "template") { visualizationView.value = view; activeView.value = view; }
-function selectAnalysis(view: "zonal" | "bug" | "cu") { analysisView.value = view; activeView.value = view; }
+function selectAnalysis(view: AnalysisView) { activeRibbonTab.value = "analysis"; analysisView.value = view; activeView.value = view; }
 function navigateTabs(event: KeyboardEvent) {
   const tabs: RibbonTab[] = ["file", "visualize", "analysis", "compare", "reports"];
   if (!(event.target instanceof HTMLElement) || event.target.getAttribute("role") !== "tab") return;
@@ -146,7 +218,7 @@ function navigateTabs(event: KeyboardEvent) {
 function dismissMenus(event: MouseEvent) {
   const target = event.target as HTMLElement;
   const clickedMenu = target.closest<HTMLDetailsElement>(".ribbon details, .display-menu");
-  const modalOpen = [showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal].some(state => state.value);
+  const modalOpen = [showAboutModal, showEditorModal, showConverterModal, showNewLuminaireModal, showCatalogModal].some(state => state.value);
   document.querySelectorAll<HTMLDetailsElement>(".ribbon details[open], .display-menu[open]").forEach(menu => {
     if (menu !== clickedMenu || (target.closest("button") && !modalOpen)) {
       const hadFocus = menu.contains(document.activeElement);
@@ -171,7 +243,7 @@ function handleShortcuts(event: KeyboardEvent) {
     }
   }
   if (event.key === "Escape") {
-    const modal = [showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal].find(state => state.value);
+    const modal = [showAboutModal, showEditorModal, showConverterModal, showNewLuminaireModal, showCatalogModal].find(state => state.value);
     if (modal) { modal.value = false; event.preventDefault(); return; }
     const menus = Array.from(document.querySelectorAll<HTMLDetailsElement>(".ribbon details[open], .display-menu[open]"));
     if (menus.length) {
@@ -309,12 +381,6 @@ function handleEditorSave(updated: PhotometricData) {
   statusMessage.value = "Luminaire changes applied.";
 }
 
-// Load Samples
-function loadSample(type: "downlight" | "roadway" | "floodlight") {
-  const index = { downlight:0, roadway:1, floodlight:2 }[type];
-  handleLuminaireLoad(library.catalog.value[index].data);
-}
-
 // Computed stats
 const maxCandelaInfo = computed(() => {
   if (!currentData.value) return "0 cd";
@@ -373,7 +439,7 @@ const dimensionsInfo = computed(() => {
 
 let dialogTrigger: HTMLElement | null = null;
 let dialogObserver: MutationObserver | undefined;
-watch([showAboutModal, showEditorModal, showCIEModal, showConverterModal, showNewLuminaireModal, showCatalogModal], async (states, previous) => {
+watch([showAboutModal, showEditorModal, showConverterModal, showNewLuminaireModal, showCatalogModal], async (states, previous) => {
   if (states.some(Boolean) && !previous.some(Boolean)) {
     dialogTrigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     await nextTick();
@@ -406,7 +472,11 @@ onMounted(async () => {
   window.addEventListener("keydown", handleShortcuts);
   document.addEventListener("click", dismissMenus);
   // Initialize with commercial downlight sample
-  loadSample("downlight");
+  handleLuminaireLoad(library.catalog.value[0].data);
+  if (workspace.value) {
+    workspaceObserver = new ResizeObserver(([entry]) => { workspaceWidth.value = entry.contentRect.width; });
+    workspaceObserver.observe(workspace.value);
+  }
 
   // Show window in Tauri after first mount to avoid flash and apply CSD
   if (isTauri()) {
@@ -420,6 +490,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   shellUnmounted = true;
   disposeTypography?.();
+  workspaceObserver?.disconnect();
   dialogObserver?.disconnect();
   window.removeEventListener("keydown", handleShortcuts);
   document.removeEventListener("click", dismissMenus);
@@ -442,7 +513,7 @@ onBeforeUnmount(() => {
     <!-- Header / Window Titlebar with Client-Side Decorations (CSD) -->
     <header class="window-titlebar" data-tauri-drag-region>
       <div class="app-branding" data-tauri-drag-region>
-        <AppIcon name="lightbulb" :size="18" />
+        <img src="/app-icon.svg" width="18" height="18" alt="" data-tauri-drag-region />
         <span>Open Photometric Toolbox</span>
         <span class="file-name">— {{ currentFileName }}</span>
       </div>
@@ -497,7 +568,7 @@ onBeforeUnmount(() => {
         <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
       </div></details>
     </nav>
-    <RibbonToolbar ref="ribbonToolbar">
+    <RibbonToolbar ref="ribbonToolbar" :class="{ 'report-ribbon': activeRibbonTab === 'reports' }">
       <template v-if="activeRibbonTab === 'file'">
         <div class="ribbon-group"><div class="ribbon-actions">
           <RibbonAction icon="plus" label="New Luminaire" @click="showNewLuminaireModal = true" />
@@ -510,7 +581,6 @@ onBeforeUnmount(() => {
         </div><small>Photometry</small></div>
         <div class="ribbon-group"><div class="ribbon-actions">
           <RibbonAction icon="database" label="Library" @click="openCatalog()" />
-          <details class="ribbon-menu"><summary><AppIcon name="folder" :size="24" /><span>Samples</span></summary><div class="menu-content"><button @click="loadSample('downlight')">Downlight</button><button @click="loadSample('roadway')">Roadway</button><button @click="loadSample('floodlight')">Floodlight</button></div></details>
         </div><small>Sources</small></div>
       </template>
       <template v-else-if="activeRibbonTab === 'visualize'">
@@ -526,9 +596,9 @@ onBeforeUnmount(() => {
         <div v-else class="ribbon-group"><div class="ribbon-fields"><label>Illuminance Units <ThemedSelect label="Illuminance Units" v-model="illuminanceUnits" :options="[{label:'Footcandles',value:'fc'},{label:'Lux',value:'lux'}]" /></label></div><small>Illuminance</small></div>
       </template>
       <template v-else-if="activeRibbonTab === 'analysis'">
-        <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'}]" @update:model-value="selectAnalysis" /></label></div><small>Analysis</small></div>
+        <div class="ribbon-group"><div class="ribbon-fields"><label>View <ThemedSelect label="View" :model-value="analysisView" :options="[{label:'Zonal Lumens',value:'zonal'},{label:'BUG Rating',value:'bug'},{label:'CU Table',value:'cu'},{label:'CIE Classification',value:'cie'}]" @update:model-value="selectAnalysis" /></label></div><small>Analysis</small></div>
         <div class="ribbon-group"><div class="ribbon-actions">
-          <RibbonAction icon="chart" label="CIE Class" accessible-label="CIE Classification" @click="showCIEModal = true" />
+          <RibbonAction icon="chart" label="CIE Class" accessible-label="CIE Classification" :aria-pressed="activeView === 'cie'" @click="selectAnalysis('cie')" />
           <RibbonAction icon="report" label="Copy Summary" accessible-label="Copy Photometric Summary" @click="copyData" />
           <RibbonAction icon="convert" label="Convert B/C" accessible-label="Convert Type B/C" @click="showConverterModal = true" />
         </div><small>Tools</small></div>
@@ -540,12 +610,40 @@ onBeforeUnmount(() => {
           <button :aria-label="`Library for ${side}`" :title="`Library for ${side}`" @click="openCatalog(side)"><AppIcon name="database" :size="18" /></button>
         </div><small>Luminaire {{ side }}</small></div>
       </template>
-      <div v-else class="ribbon-group"><div class="ribbon-fields"><span>Report options and export are beside the preview.</span></div><small>Reports</small></div>
+      <template v-else>
+        <div class="ribbon-group">
+          <div class="ribbon-fields report-types" role="group" aria-label="Report Type">
+            <button
+              v-for="type in reportTypes"
+              :key="type.value"
+              type="button"
+              :aria-pressed="reportType === type.value"
+              @click="reportType = type.value"
+            >{{ type.label }}</button>
+          </div>
+          <small>Report Type</small>
+        </div>
+        <div class="ribbon-group">
+          <div class="ribbon-fields report-fields">
+            <label class="report-font-field">Report Font <ThemedSelect label="Report Font" v-model="reportFont" :options="reportFontOptions" :title="reportFont === 'system-ui' ? 'System default' : reportFont" filter /></label>
+            <label>Report Zoom <ThemedSelect label="Report Zoom" v-model="reportZoom" :options="reportZoomOptions" /></label>
+          </div>
+          <small>Preview</small>
+        </div>
+        <div class="ribbon-group">
+          <div class="ribbon-actions">
+            <RibbonAction icon="refresh" :label="reportFontsLoading ? 'Loading fonts…' : 'Load system fonts'" :disabled="reportFontsLoading" @click="loadReportFonts" />
+            <RibbonAction icon="report" label="Print / Save PDF" :disabled="!reportViewer" @click="reportViewer?.printReport()" />
+            <RibbonAction icon="save" label="Export HTML" accessible-label="Export HTML Report" :disabled="!reportViewer" @click="reportViewer?.downloadHtmlReport()" />
+          </div>
+          <small>Fonts &amp; Export</small>
+        </div>
+      </template>
     </RibbonToolbar>
 
-    <main class="main-body">
+    <main ref="workspace" class="main-body">
       <!-- Side Inspector / Metadata Rail -->
-      <aside v-if="showInspector" class="side-inspector">
+      <aside v-if="showInspector" id="luminaire-inspector" class="side-inspector" :style="{ width: `${actualInspectorWidth}px` }">
         <div class="inspector-header">
           <span>Luminaire Inspector</span>
           <button class="theme-toggle-btn" aria-label="Hide Inspector" title="Hide Inspector" @click="showInspector = false">
@@ -573,7 +671,7 @@ onBeforeUnmount(() => {
               <span class="k">Max Intensity:</span>
               <span class="v">{{ maxCandelaInfo }}</span>
             </div>
-            <button class="data-kv inspector-cie" title="View CIE Classification & Flux Code" @click="showCIEModal = true">
+            <button class="data-kv inspector-cie" :disabled="!currentData" title="View CIE Classification & Flux Code" @click="selectAnalysis('cie')">
               <span class="k">CIE Classification:</span>
               <span class="v" style="color: var(--accent); text-decoration: underline">{{ currentData?.calculated.cieClassification }} ({{ currentData?.calculated.cieDetails?.fluxCode }})</span>
             </button>
@@ -636,6 +734,23 @@ onBeforeUnmount(() => {
 
         </div>
       </aside>
+      <div
+        v-if="showInspector"
+        class="inspector-divider"
+        role="separator"
+        tabindex="0"
+        aria-label="Resize Luminaire Inspector"
+        aria-controls="luminaire-inspector"
+        aria-orientation="vertical"
+        :aria-valuemin="minInspectorWidth"
+        :aria-valuemax="maxInspectorWidth"
+        :aria-valuenow="actualInspectorWidth"
+        @pointerdown="startInspectorResize"
+        @pointermove="moveInspectorResize"
+        @pointerup="endInspectorResize"
+        @lostpointercapture="endInspectorResize"
+        @keydown="resizeInspectorWithKeys"
+      />
 
       <!-- Center Viewport Area (Directly displays active tool view without duplicate tab bars) -->
       <section class="viewport-area">
@@ -684,12 +799,20 @@ onBeforeUnmount(() => {
             :cu="currentData.calculated.cuTable"
           />
 
+          <CIEClassificationViewer
+            v-else-if="activeView === 'cie' && currentData"
+            :data="currentData"
+          />
+
           <!-- Formal Reports View -->
           <ReportViewer
             v-else-if="activeView === 'reports' && currentData"
+            ref="reportViewer"
             :data="currentData"
-            v-model:font-family="reportFont"
-            v-model:report-type="reportType"
+            :font-family="reportFont"
+            :report-type="reportType"
+            :zoom="reportZoom"
+            :font-message="reportFontMessage"
           />
 
           <!-- Compare Luminaires View -->
@@ -720,13 +843,6 @@ onBeforeUnmount(() => {
       :data="currentData"
       @save="handleEditorSave"
       @close="showEditorModal = false"
-    />
-
-    <!-- CIE Luminaire Classification & Flux Code Modal -->
-    <CIEClassificationModal
-      v-if="showCIEModal && currentData"
-      :data="currentData"
-      @close="showCIEModal = false"
     />
 
     <!-- Goniometer B/C Web Converter Modal -->
@@ -894,19 +1010,19 @@ onBeforeUnmount(() => {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
   color: var(--text);
 }
 
 .modal-body {
   padding: 16px;
   overflow-y: auto;
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   color: var(--muted);
 }
 
 .modal-body h3 {
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
   color: var(--text);
   margin-bottom: 6px;
 }
@@ -936,7 +1052,7 @@ onBeforeUnmount(() => {
 
 .about-hero-text h2 {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--text-size-display);
   color: var(--text);
   display: inline-block;
   margin-right: 8px;
@@ -944,7 +1060,7 @@ onBeforeUnmount(() => {
 
 .about-badge {
   display: inline-block;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   padding: 2px 8px;
   border-radius: 12px;
@@ -956,7 +1072,7 @@ onBeforeUnmount(() => {
 
 .about-tagline {
   margin: 4px 0 0;
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   color: var(--muted);
 }
 
@@ -965,7 +1081,7 @@ onBeforeUnmount(() => {
 }
 
 .about-section h3 {
-  font-size: 0.9rem;
+  font-size: var(--text-size-ui);
   font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
@@ -1002,14 +1118,14 @@ onBeforeUnmount(() => {
 
 .about-feature-item strong {
   display: block;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   color: var(--text);
   margin-bottom: 2px;
 }
 
 .about-feature-item span {
   display: block;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   line-height: 1.4;
 }

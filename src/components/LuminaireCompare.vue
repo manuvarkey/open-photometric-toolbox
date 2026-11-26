@@ -200,12 +200,12 @@ const pathB = computed(() => getCurvePath(compareData.value));
   flex-direction: column;
   gap: 2px;
   font-weight: 600;
-  font-size: 0.92rem;
+  font-size: var(--text-size-ui);
   color: var(--text);
 }
 
 .sub-label {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   font-weight: normal;
 }
@@ -214,7 +214,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
 }
 
@@ -224,7 +224,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   outline: none;
 }
 
@@ -248,7 +248,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
 }
 
 .card-title {
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   color: var(--text);
   margin-bottom: 10px;
@@ -261,7 +261,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
 }
 
 .legend-badge {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   padding: 2px 8px;
   border-radius: 4px;
@@ -296,7 +296,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
 .delta-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
 }
 
 .delta-table th,
@@ -310,7 +310,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
   background: var(--well);
   color: var(--muted);
   font-weight: 500;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
 }
 
 .metric-name {
@@ -333,7 +333,7 @@ const pathB = computed(() => getCurvePath(compareData.value));
 .delta-tag {
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 500;

@@ -60,7 +60,7 @@ onBeforeUnmount(leave);
           <circle v-for="m in 4" :key="m" cx="300" cy="300" :r="m*600/9" fill="none" stroke="var(--graph-grid)" stroke-width=".6" />
         </g>
         <path d="M0 300H600M300 0V600" stroke="var(--accent)" stroke-width="1" />
-        <g v-for="m in [-4,-3,-2,-1,1,2,3,4]" :key="m" fill="var(--text)" font-size="17">
+        <g v-for="m in [-4,-3,-2,-1,1,2,3,4]" :key="m" fill="var(--text)" style="font-size: var(--text-size-display)">
           <text :x="300+m*600/9" y="316" text-anchor="middle">{{ m }}MH</text>
           <text x="306" :y="300-m*600/9-5">{{ m }}MH</text>
         </g>
@@ -100,7 +100,7 @@ onBeforeUnmount(leave);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   color: var(--text);
 }
 
@@ -117,7 +117,7 @@ onBeforeUnmount(leave);
 
 .unit-tag {
   color: var(--muted);
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
 }
 
 .segmented-control {
@@ -132,7 +132,7 @@ onBeforeUnmount(leave);
   padding: 4px 10px;
   border: 0;
   background: none;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   cursor: pointer;
 }
@@ -144,7 +144,7 @@ onBeforeUnmount(leave);
 }
 
 .stat-badge {
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   padding: 4px 10px;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -197,7 +197,7 @@ onBeforeUnmount(leave);
 }
 
 .legend-title {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   margin-bottom: 6px;
   font-weight: 500;
@@ -213,7 +213,7 @@ onBeforeUnmount(leave);
 .legend-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.68rem;
+  font-size: var(--text-size-caption);
   color: var(--hint);
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;

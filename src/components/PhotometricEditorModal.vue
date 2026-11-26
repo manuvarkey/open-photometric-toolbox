@@ -231,7 +231,7 @@ function handleApply() {
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
   color: var(--text);
 }
 
@@ -250,7 +250,7 @@ function handleApply() {
 }
 
 .editor-section legend {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   color: var(--accent);
   text-transform: uppercase;
@@ -280,7 +280,7 @@ function handleApply() {
 }
 
 .field label {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
 }
 
@@ -293,12 +293,12 @@ function handleApply() {
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
   color: var(--text);
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   outline: none;
 }
 
 .field-hint {
-  font-size: 0.7rem;
+  font-size: var(--text-size-caption);
   color: var(--hint);
 }
 
@@ -318,7 +318,7 @@ function handleApply() {
   border-radius: var(--control-radius);
   color: var(--muted);
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
 }
 
 .btn-save {
@@ -328,7 +328,7 @@ function handleApply() {
   border-radius: var(--control-radius);
   color: #fff;
   cursor: pointer;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
 }
 </style>

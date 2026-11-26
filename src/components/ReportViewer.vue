@@ -1,37 +1,41 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { isTauri } from "@tauri-apps/api/core";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeTextFile } from "@tauri-apps/plugin-fs";
-import AppIcon from "./AppIcon.vue";
-import ThemedSelect from "./ThemedSelect.vue";
-import { listSystemFonts, nativeFonts, reportFontCSS } from "../services/systemFonts";
+import { reportFontCSS } from "../services/systemFonts";
 import { polarPath } from "../utils/plotPaths";
 import type { PhotometricData } from "../core/types";
 
 const props = defineProps<{
   data: PhotometricData;
+  reportType: "indoor" | "roadway" | "floodlight";
+  fontFamily: string;
+  zoom: number | "fit";
+  fontMessage: string;
 }>();
 
-const activeReport = defineModel<"indoor" | "roadway" | "floodlight">("reportType", { required: true });
-const fontFamily = defineModel<string>("fontFamily", { required: true });
-const fonts = ref<string[]>([]);
-const fontMessage = ref("");
-const fontsLoading = ref(false);
-const fontStyle = computed(() => reportFontCSS(fontFamily.value));
-const fontOptions = computed(() => [{label:'System default',value:'system-ui'}, ...fonts.value.map(family => ({label:family,value:family}))]);
-async function loadFonts() {
-  fontsLoading.value = true;
-  try { fonts.value = await listSystemFonts(); fontMessage.value = `${fonts.value.length} installed font families`; }
-  catch (error) { fontMessage.value = error instanceof Error ? error.message : String(error); }
-  finally { fontsLoading.value = false; }
-}
-onMounted(() => { if (nativeFonts() || fontFamily.value !== "system-ui") void loadFonts(); });
+const fontStyle = computed(() => reportFontCSS(props.fontFamily));
+const paperContainer = ref<HTMLElement>();
+const paper = ref<HTMLElement>();
+const fitZoom = ref(1);
+const previewZoom = computed(() => props.zoom === "fit" ? fitZoom.value : props.zoom / 100);
+let resizeObserver: ResizeObserver | undefined;
+onMounted(() => {
+  if (!paperContainer.value || !paper.value) return;
+  resizeObserver = new ResizeObserver(([entry]) => {
+    if (entry.contentRect.width > 0 && paper.value?.offsetWidth) {
+      fitZoom.value = Math.min(1, entry.contentRect.width / paper.value.offsetWidth);
+    }
+  });
+  resizeObserver.observe(paperContainer.value);
+});
+onBeforeUnmount(() => resizeObserver?.disconnect());
 
 // Report Title
 const reportTitle = computed(() => {
-  if (activeReport.value === "indoor") return "Indoor Photometric Luminaire Report";
-  if (activeReport.value === "roadway") return "Roadway Luminaire Classification Report (IES RP-8 / TM-15)";
+  if (props.reportType === "indoor") return "Indoor Photometric Luminaire Report";
+  if (props.reportType === "roadway") return "Roadway Luminaire Classification Report (IES RP-8 / TM-15)";
   return "Outdoor Architectural Floodlight Report (NEMA Beam Classification)";
 });
 
@@ -43,46 +47,50 @@ async function printReport() {
 
 // Download HTML
 async function downloadHtmlReport() {
-  const element = document.getElementById("printable-report-content");
+  const element = paper.value;
   if (!element) return;
   const title = `${reportTitle.value} — ${props.data.fileName}`
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
+  const style = getComputedStyle(element);
+  const typography = ["--report-size-body", "--report-size-caption", "--report-size-title"]
+    .map(token => token + ": " + style.getPropertyValue(token).trim() + ";").join(" ");
   const htmlContent = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8" />
   <title>${title}</title>
   <style>
-    body { font-family: ${fontStyle.value}; margin: 30px; color: #18181b; background: #fff; line-height: 1.4; font-size: 12px; }
-    h1 { font-size: 18px; margin: 0 0 4px; color: #0f172a; }
-    h2 { font-size: 13px; margin: 12px 0 6px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11px; }
+    :root { ${typography} }
+    body { font-family: ${fontStyle.value}; margin: 30px; color: #18181b; background: #fff; line-height: 1.4; font-size: var(--report-size-body); }
+    h1 { font-size: var(--report-size-title); margin: 0 0 4px; color: #0f172a; }
+    h2 { font-size: var(--report-size-body); margin: 12px 0 6px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: var(--report-size-body); }
     th, td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; }
     th { background: #f1f5f9; color: #475569; }
     .text-right { text-align: right; }
     .header-box { border: 1px solid #94a3b8; padding: 12px; margin-bottom: 16px; border-radius: 4px; background: #f8fafc; }
     .header-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .report-type-badge { background: #d97706; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: 10px; text-transform: uppercase; }
-    .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: 11px; }
+    .report-type-badge { background: #d97706; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: var(--report-size-caption); text-transform: uppercase; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: var(--report-size-body); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 3px; font-weight: bold; }
     .doc-section { margin-bottom: 16px; }
-    .section-title { font-weight: bold; font-size: 12px; color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
+    .section-title { font-weight: bold; font-size: var(--report-size-body); color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
     .polar-svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
     .doc-header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; }
     .doc-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
     .doc-title-row > :first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
     .doc-badge-col { flex: none; }
     .doc-subtitle, .polar-caption { color: #64748b; }
-    .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: 10px; }
+    .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: var(--report-size-caption); }
     .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
     .meta-col { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; }
     .polar-summary-section { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 14px; }
     .polar-box { display: flex; flex-direction: column; align-items: center; }
     .report-polar-svg { width: 180px; height: 180px; }
-    .cu-report-table th, .cu-report-table td { font-size: 9px; padding: 2px 3px; text-align: center; }
-    .doc-footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: 9px; color: #94a3b8; text-align: center; }
+    .cu-report-table th, .cu-report-table td { font-size: var(--report-size-caption); padding: 2px 3px; text-align: center; }
+    .doc-footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: var(--report-size-caption); color: #94a3b8; text-align: center; }
   </style>
 </head>
 <body>
@@ -90,7 +98,7 @@ async function downloadHtmlReport() {
 </body>
 </html>`;
 
-  const defaultFileName = `${props.data.fileName.replace(/\.(ies|ldt|txt)$/i, "")}_${activeReport.value}_report.html`;
+  const defaultFileName = `${props.data.fileName.replace(/\.(ies|ldt|txt)$/i, "")}_${props.reportType}_report.html`;
 
   if (isTauri()) {
     try {
@@ -121,6 +129,8 @@ async function downloadHtmlReport() {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+defineExpose({ printReport, downloadHtmlReport });
+
 // Polar SVG path
 const cx = 150;
 const cy = 150;
@@ -130,28 +140,9 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 
 <template>
   <div class="reports-root">
-    <!-- Toolbar -->
-    <div class="report-toolbar no-print">
-      <label>Report Type <ThemedSelect label="Report Type" v-model="activeReport" :options="[{label:'Indoor',value:'indoor'},{label:'Roadway',value:'roadway'},{label:'Floodlight',value:'floodlight'}]" /></label>
-      <label class="font-picker">Report Font <ThemedSelect label="Report Font" v-model="fontFamily" :options="fontOptions" filter /></label>
-      <button class="btn-action font-load" :disabled="fontsLoading" :title="fontMessage || 'Read the installed font list'" @click="loadFonts"><AppIcon name="refresh" :size="14" />{{ fontsLoading ? 'Loading fonts…' : 'Load system fonts' }}</button>
-
-      <div class="action-buttons">
-        <button class="btn-action primary" @click="printReport">
-          <AppIcon name="report" :size="14" />
-          <span>Print / Save PDF</span>
-        </button>
-        <button class="btn-action" @click="downloadHtmlReport">
-          <AppIcon name="save" :size="14" />
-          <span>Export HTML Report</span>
-        </button>
-      </div>
-    </div>
-
     <p v-if="fontMessage" class="font-status no-print" role="status">{{ fontMessage }}</p>
-    <!-- Printable Report Document Page -->
-    <div class="paper-container">
-      <div id="printable-report-content" class="report-paper" :style="{fontFamily:fontStyle}">
+    <div ref="paperContainer" class="paper-container">
+      <div ref="paper" id="printable-report-content" class="report-paper" :style="{ fontFamily: fontStyle, '--report-preview-zoom': previewZoom }">
         <!-- Report Header -->
         <header class="doc-header">
           <div class="doc-title-row">
@@ -218,7 +209,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
         <!-- REPORT-SPECIFIC BODY SECTIONS -->
 
         <!-- 1. INDOOR REPORT DETAILS -->
-        <template v-if="activeReport === 'indoor'">
+        <template v-if="reportType === 'indoor'">
           <!-- Coefficients of Utilization Summary -->
           <section class="doc-section">
             <div class="section-title">Coefficients of Utilization (Zonal Cavity Method) — Effective Floor Cavity 20%</div>
@@ -306,7 +297,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
         </template>
 
         <!-- 2. ROADWAY REPORT DETAILS -->
-        <template v-else-if="activeReport === 'roadway'">
+        <template v-else-if="reportType === 'roadway'">
           <section class="doc-section">
             <div class="section-title">IES RP-8 Roadway Classification Summary</div>
             <table class="report-table">
@@ -361,7 +352,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
         </template>
 
         <!-- 3. FLOODLIGHT REPORT DETAILS -->
-        <template v-else-if="activeReport === 'floodlight'">
+        <template v-else-if="reportType === 'floodlight'">
           <section class="doc-section">
             <div class="section-title">NEMA Beam & Field Spread Classification</div>
             <table class="report-table">
@@ -419,78 +410,6 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   overflow: hidden;
 }
 
-.report-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 16px;
-  background: var(--well);
-  border-bottom: 1px solid var(--line-soft);
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.report-toolbar select {
-  color: var(--text);
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  padding: 6px 9px;
-  font: inherit;
-}
-
-.type-selector {
-  display: flex;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  overflow: hidden;
-}
-
-.report-tab {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  border: 0;
-  background: none;
-  font-size: 0.8rem;
-  color: var(--muted);
-  cursor: pointer;
-}
-
-.report-tab.active {
-  background: var(--accent);
-  color: #fff;
-  font-weight: 500;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-action {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  background: var(--raised);
-  border: 1px solid var(--line);
-  border-radius: var(--control-radius);
-  color: var(--text);
-  font-size: 0.8rem;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-action.primary {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--on-accent);
-  font-weight: 500;
-}
-
 .paper-container {
   flex: 1;
   min-height: 0;
@@ -504,11 +423,12 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   background: #ffffff;
   color: #18181b;
   width: 820px;
-  flex: 0 0 820px;
+  flex: none;
+  zoom: var(--report-preview-zoom);
   min-height: 1050px;
   padding: 32px 36px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  font-size: 11px;
+  font-size: var(--report-size-body);
   line-height: 1.4;
   display: flex;
   flex-direction: column;
@@ -532,21 +452,21 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 .doc-badge-col { flex: none; }
 
 .doc-main-title {
-  font-size: 18px;
+  font-size: var(--report-size-title);
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .doc-subtitle {
-  font-size: 11px;
+  font-size: var(--report-size-body);
   color: #64748b;
   margin-top: 2px;
 }
 
 .report-stamp {
   white-space: nowrap;
-  font-size: 10px;
+  font-size: var(--report-size-caption);
   font-weight: 700;
   letter-spacing: 0.05em;
   background: #0f172a;
@@ -563,7 +483,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   border: 1px solid #e2e8f0;
   padding: 8px 12px;
   border-radius: 4px;
-  font-size: 10.5px;
+  font-size: var(--report-size-body);
 }
 
 .meta-col {
@@ -599,14 +519,14 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 }
 
 .polar-caption {
-  font-size: 9.5px;
+  font-size: var(--report-size-caption);
   color: #64748b;
   margin-top: 4px;
   text-align: center;
 }
 
 .section-title {
-  font-size: 11.5px;
+  font-size: var(--report-size-body);
   font-weight: 700;
   color: #0f172a;
   border-bottom: 1px solid #cbd5e1;
@@ -619,7 +539,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 .report-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 10.5px;
+  font-size: var(--report-size-body);
 }
 
 .report-table th,
@@ -636,7 +556,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 
 .cu-report-table th,
 .cu-report-table td {
-  font-size: 9px;
+  font-size: var(--report-size-caption);
   padding: 2px 3px;
   text-align: center;
 }
@@ -647,7 +567,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   background: #e2e8f0;
   border-radius: 3px;
   font-weight: 600;
-  font-size: 10px;
+  font-size: var(--report-size-caption);
 }
 
 .text-right {
@@ -668,7 +588,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   margin-top: auto;
   border-top: 1px solid #cbd5e1;
   padding-top: 8px;
-  font-size: 9px;
+  font-size: var(--report-size-caption);
   color: #94a3b8;
   text-align: center;
 }
@@ -691,9 +611,5 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
     padding: 0 !important;
   }
 }
-.font-picker { min-width: 0; max-width: 300px; }
-.font-picker .app-select { min-width: 120px; max-width: 220px; }
-.font-status { padding: 4px 12px; font-size: .78rem; color: var(--muted); background: var(--panel); }
-.report-toolbar { flex-wrap: wrap; }
-.report-toolbar .font-load { white-space: nowrap; }
+.font-status { padding: 4px 12px; font-size: var(--text-size-caption); color: var(--muted); background: var(--panel); }
 </style>

@@ -16,7 +16,8 @@ export function applyDesktopFont(native: DesktopFont = {}) {
   const style = document.documentElement.style;
   style.setProperty('--ui-font-family', native.family ? reportFontCSS(native.family) : menuFamily || 'system-ui');
   const size = native.size && /^\d+(\.\d+)?(px|pt)$/.test(native.size) ? native.size : menuSize;
-  style.setProperty('--ui-font-size', parseFloat(size) > 0 ? size : '13px');
+  if (parseFloat(size) > 0) style.setProperty('--ui-font-size', size);
+  else style.removeProperty('--ui-font-size');
 }
 
 /** Subscribe before reading so startup and GTK setting changes share one policy. */

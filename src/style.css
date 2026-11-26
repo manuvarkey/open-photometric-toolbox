@@ -12,12 +12,15 @@ html, body, #app {
   user-select: none;
   -webkit-user-select: none;
   font-family: var(--ui-font-family, system-ui, -apple-system, sans-serif);
-  font-size: var(--ui-font-size, 13px);
+  font-size: var(--ui-font-size);
   color: var(--text);
   background: var(--bg);
 }
 
 button, input, select, textarea, summary { font: inherit; }
+h1, h2 { font-size: var(--text-size-heading); }
+h3, h4, h5, h6 { font-size: var(--text-size-ui); }
+small { font-size: var(--text-size-caption); }
 input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { font-variant-numeric: tabular-nums; }
 
 /* Header & Title bar */
@@ -42,8 +45,8 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   color: var(--text);
 }
 
-.window-titlebar .app-branding svg {
-  color: var(--accent);
+.window-titlebar .app-branding img {
+  flex-shrink: 0;
 }
 
 .window-titlebar .file-name {
@@ -152,7 +155,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
 }
 
 .ribbon-group > small {
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   color: var(--hint);
   text-align: center;
   line-height: 1;
@@ -210,6 +213,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
 }
 
 .ribbon-action.pressed,
+.ribbon-action[aria-pressed="true"],
 .ribbon-action.active {
   background: var(--accent-soft);
   color: var(--accent);
@@ -227,7 +231,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
-  font-size: var(--text-size-toolbar);
+  font-size: var(--text-size-ui);
   line-height: 1.05;
   height: 2.1em;
   flex: 0 0 auto;
@@ -257,20 +261,31 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
 
 /* Side Inspector / Metadata Rail */
 .side-inspector {
-  width: clamp(180px, 24%, 320px);
   flex-shrink: 0;
   background: var(--panel);
-  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.inspector-divider {
+  flex: 0 0 6px;
+  border-inline-start: 1px solid var(--line);
+  background: var(--well);
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.inspector-divider:is(:hover, :active, :focus-visible) {
+  background: var(--accent);
+  outline: 0;
 }
 
 .inspector-header {
   padding: 10px 14px;
   background: var(--well);
   border-bottom: 1px solid var(--line-soft);
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   font-weight: 600;
   color: var(--text);
   display: flex;
@@ -292,10 +307,11 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   border: 1px solid var(--line);
   border-radius: var(--control-radius);
   padding: 10px 12px;
+  overflow-wrap: anywhere;
 }
 
 .data-card-title {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   font-weight: 700;
   color: var(--accent);
   text-transform: uppercase;
@@ -304,10 +320,12 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
 }
 
 .data-kv {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px;
   align-items: baseline;
-  font-size: 0.82rem;
+  overflow-wrap: anywhere;
+  font-size: var(--text-size-caption);
   padding: 3px 0;
   border-bottom: 1px solid var(--line-soft);
 }
@@ -326,7 +344,6 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   color: var(--text);
   font-weight: 600;
 }
-.data-card .data-kv:nth-child(-n + 4) .v { white-space: nowrap; }
 .inspector-cie {
   width: 100%;
   background: transparent;
@@ -362,7 +379,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   border: 0;
   border-radius: var(--control-radius);
   background: none;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
@@ -396,7 +413,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   background: var(--well);
   border-top: 1px solid var(--line-soft);
   padding: 0 12px;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted);
   flex-shrink: 0;
 }
@@ -466,9 +483,9 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   .ribbon,
   .ribbon-toolbar,
   .side-inspector,
+  .inspector-divider,
   .status-bar,
   .viewport-tabs,
-  .report-toolbar,
   .no-print,
   .modal-backdrop,
   .modal-overlay,
@@ -499,6 +516,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   }
 
   .report-paper {
+    zoom: 1 !important;
     flex: none !important;
     box-shadow: none !important;
     border: none !important;
@@ -518,7 +536,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   .report-table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: 10px !important;
+    font-size: var(--report-size-caption) !important;
   }
 
   .report-table th,
@@ -537,14 +555,29 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
 .ribbon-fields { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; }
 .ribbon-fields > label { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; min-width: 0; }
 .ribbon-fields .app-select { max-width: 210px; }
+.report-fields .app-select { min-width: 6em; max-width: 12em; }
+.report-font-field .app-select { width: 12em; }
+.report-ribbon {
+  flex-wrap: wrap;
+  row-gap: 6px;
+  height: auto;
+}
+.report-types { gap: 2px; }
+.report-types button {
+  padding: 5px 7px;
+  border: 1px solid var(--line);
+  border-radius: var(--control-radius);
+  background: var(--well);
+  color: var(--text);
+  cursor: pointer;
+}
+.report-types button:is(:hover, [aria-pressed="true"]) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
 .ribbon-fields summary, .display-menu summary, .menu-content button, .menu-content select, .compare-slot > button { background: var(--well); color: var(--text); border: 1px solid var(--line); border-radius: var(--control-radius); padding: 6px 9px; font: inherit; cursor: pointer; }
 .menu-content label { display: flex; align-items: center; gap: 6px; }
-.ribbon-menu { grid-row: span 3; min-width: 64px; }
-.ribbon-menu > summary { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; height: 100%; padding: 5px 4px 2px; font-size: var(--text-size-toolbar); border-radius: 5px; }
-.ribbon-menu > summary svg { color: var(--toolbar-icon); }
-.ribbon-menu > summary::after { content: none; }
-.ribbon-menu > summary span::after { content: ' ▾'; }
-.ribbon-menu > summary:hover { background: var(--accent-soft); color: var(--accent); }
 .ribbon-fields + small { flex-shrink: 0; }
 .comparison-group { flex: 1 1 0; min-width: 0; }
 .compare-slot > .app-select { flex: 1; min-width: 0; max-width: none; }
@@ -595,7 +628,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   border: 1px solid transparent;
   border-radius: var(--control-radius);
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   cursor: pointer;
 }

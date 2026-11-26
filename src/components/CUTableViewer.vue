@@ -119,12 +119,12 @@ function getCellColor(val: number): string {
   align-items: center;
   gap: 12px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
   color: var(--text);
 }
 
 .floor-badge {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   background: var(--raised);
   border: 1px solid var(--line-soft);
   padding: 2px 8px;
@@ -139,7 +139,7 @@ function getCellColor(val: number): string {
 }
 
 .sc-badge {
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   background: var(--raised);
   border: 1px solid var(--line);
   padding: 3px 10px;
@@ -160,7 +160,7 @@ function getCellColor(val: number): string {
   border-collapse: collapse;
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
 }
 
 .cu-table th,
@@ -183,7 +183,7 @@ function getCellColor(val: number): string {
   background: var(--well);
   color: var(--text);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   padding: 6px;
   border-bottom: 1px solid var(--line);
 }
@@ -192,7 +192,7 @@ function getCellColor(val: number): string {
   background: var(--panel);
   color: var(--muted);
   font-weight: 500;
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   min-width: 38px;
 }
 
@@ -204,7 +204,7 @@ function getCellColor(val: number): string {
 
 .rcr-zero {
   color: var(--accent);
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
 }
 
 .cu-cell {
@@ -221,7 +221,7 @@ function getCellColor(val: number): string {
   padding: 8px 14px;
   background: var(--well);
   border-top: 1px solid var(--line-soft);
-  font-size: 0.73rem;
+  font-size: var(--text-size-caption);
   color: var(--hint);
 }
 

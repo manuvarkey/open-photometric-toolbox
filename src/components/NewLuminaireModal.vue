@@ -434,7 +434,7 @@ function handleCreate() {
   align-items: center;
   gap: 10px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: var(--text-size-ui);
 }
 
 .modal-body {
@@ -447,7 +447,7 @@ function handleCreate() {
 }
 
 .section-label {
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   color: var(--text-soft, #d4d4d8);
   margin-bottom: 8px;
@@ -486,13 +486,13 @@ function handleCreate() {
 }
 
 .preset-title {
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   color: var(--text, #edebe8);
 }
 
 .preset-desc {
-  font-size: 0.72rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
   line-height: 1.25;
 }
@@ -531,7 +531,7 @@ function handleCreate() {
   display: flex;
   justify-content: space-between;
   width: 100%;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
   margin-top: 8px;
   border-top: 1px solid var(--line-soft, #3d3d46);
@@ -552,7 +552,7 @@ function handleCreate() {
 }
 
 .field-item label {
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--muted, #a1a1aa);
 }
 
@@ -564,7 +564,7 @@ function handleCreate() {
   color: var(--text, #edebe8);
   padding: 6px 8px;
   border-radius: 4px;
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   outline: none;
 }
 
@@ -592,7 +592,7 @@ function handleCreate() {
   gap: 6px;
   padding: 6px 14px;
   border-radius: var(--control-radius, 4px);
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;

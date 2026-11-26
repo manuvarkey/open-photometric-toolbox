@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import AppIcon from "./AppIcon.vue";
 import type { PhotometricData } from "../core/types";
 
@@ -7,41 +7,31 @@ const props = defineProps<{
   data: PhotometricData;
 }>();
 
-const emit = defineEmits<{
-  (e: "close"): void;
-}>();
-
 const calc = computed(() => props.data.calculated);
 const cie = computed(() => props.data.calculated.cieDetails);
 
-function copyCIE() {
+const copyStatus = ref("");
+async function copyCIE() {
   const text = `CIE Classification: ${cie.value.luminaireType}
 CIE Flux Code: ${cie.value.fluxCode}
 DIN 5040 Class: ${cie.value.din5040Class}
 Downward Flux: ${calc.value.downwardLumens.toLocaleString()} lm (${cie.value.downwardFluxRatio}%)
 Upward Flux: ${calc.value.upwardLumens.toLocaleString()} lm (${cie.value.upwardFluxRatio}%)
 Efficiency (LOR): ${calc.value.efficiency}%`;
-  navigator.clipboard.writeText(text);
-  window.alert("CIE Classification & Flux Code copied to clipboard!");
+  try {
+    await navigator.clipboard.writeText(text);
+    copyStatus.value = "CIE summary copied.";
+  } catch {
+    copyStatus.value = "Could not copy the CIE summary.";
+  }
 }
 </script>
 
 <template>
-  <div class="modal-backdrop" @click.self="emit('close')">
-    <div class="modal-box" role="dialog" aria-modal="true" aria-label="CIE Classification">
-      <!-- Modal Header -->
-      <div class="modal-header">
-        <div class="modal-title">
-          <AppIcon name="chart" :size="20" />
-          <span>CIE Luminaire Classification & Flux Code</span>
-        </div>
-        <button class="icon-button" aria-label="Close" title="Close" @click="emit('close')">
-          <AppIcon name="close" :size="16" />
-        </button>
-      </div>
-
-      <!-- Modal Body -->
-      <div class="modal-body">
+  <div class="cie-viewer">
+    <section class="cie-report" aria-labelledby="cie-title">
+      <h2 id="cie-title">CIE Luminaire Classification &amp; Flux Code</h2>
+      <div class="cie-body">
         <!-- Luminaire Class Summary Card -->
         <div class="cie-summary-card">
           <div class="cie-badge-row">
@@ -129,69 +119,46 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
         </div>
       </div>
 
-      <!-- Modal Footer -->
-      <div class="modal-footer">
+      <div class="cie-footer">
         <button class="button secondary" @click="copyCIE">
           <AppIcon name="report" :size="14" />
           <span>Copy CIE Summary</span>
         </button>
-        <button class="button primary" @click="emit('close')">
-          <span>Done</span>
-        </button>
+        <span role="status">{{ copyStatus }}</span>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  backdrop-filter: blur(2px);
+.cie-viewer {
+  height: 100%;
+  overflow: auto;
+  padding: 16px;
 }
 
-.modal-box {
+.cie-report {
   background: var(--panel, #1e1e24);
   border: 1px solid var(--line, #383842);
   border-radius: var(--control-radius, 6px);
-  width: 600px;
-  max-width: 95vw;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.5);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  max-width: 800px;
+  margin-inline: auto;
   color: var(--text, #edebe8);
 }
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.cie-report h2 {
+  margin: 0;
   padding: 12px 16px;
   border-bottom: 1px solid var(--line, #383842);
   background: var(--well, #2a2a32);
+  font-size: var(--text-size-heading);
 }
 
-.modal-title {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 600;
-  font-size: 0.95rem;
-}
-
-.modal-body {
+.cie-body {
   padding: 16px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  max-height: 80vh;
-  overflow-y: auto;
 }
 
 .cie-summary-card {
@@ -203,6 +170,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 
 .cie-badge-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
@@ -211,7 +179,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 .cie-type-badge {
   background: var(--accent, #d97706);
   color: var(--on-accent);
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   font-weight: 700;
   padding: 3px 10px;
   border-radius: 4px;
@@ -222,7 +190,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 .din-badge {
   background: var(--hover, #33333d);
   color: var(--text-soft, #d4d4d8);
-  font-size: 0.8rem;
+  font-size: var(--text-size-caption);
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 4px;
@@ -230,7 +198,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 }
 
 .cie-description {
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   color: var(--muted, #a1a1aa);
   margin: 0 0 12px;
   line-height: 1.4;
@@ -244,8 +212,10 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 
 .flux-bar-labels {
   display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   justify-content: space-between;
-  font-size: 0.78rem;
+  font-size: var(--text-size-caption);
   color: var(--text-soft, #d4d4d8);
 }
 
@@ -277,10 +247,12 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 
 .card-heading {
   display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
   align-items: center;
   justify-content: space-between;
   padding: 10px 14px;
-  font-size: 0.85rem;
+  font-size: var(--text-size-ui);
   font-weight: 600;
   border-bottom: 1px solid var(--line-soft, #3d3d46);
   background: var(--panel, #1e1e24);
@@ -289,7 +261,7 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 .flux-code-pill {
   font-family: var(--ui-font-family);
   font-variant-numeric: tabular-nums;
-  font-size: 0.9rem;
+  font-size: var(--text-size-ui);
   font-weight: 700;
   background: var(--accent, #d97706);
   color: var(--on-accent);
@@ -301,7 +273,8 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
 .flux-code-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  font-size: var(--text-size-caption);
 }
 
 .flux-code-table th,
@@ -325,14 +298,15 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.75rem;
+  font-size: var(--text-size-caption);
   color: var(--hint, #71717a);
   padding: 0 4px;
 }
 
-.modal-footer {
+.cie-footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
   padding: 12px 16px;
   border-top: 1px solid var(--line, #383842);
@@ -345,20 +319,11 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
   gap: 6px;
   padding: 6px 14px;
   border-radius: var(--control-radius, 4px);
-  font-size: 0.82rem;
+  font-size: var(--text-size-caption);
   font-weight: 500;
   cursor: pointer;
   border: 1px solid transparent;
   transition: all 0.15s ease;
-}
-
-.button.primary {
-  background: var(--accent, #d97706);
-  color: #ffffff;
-}
-
-.button.primary:hover {
-  filter: brightness(1.1);
 }
 
 .button.secondary {
@@ -371,18 +336,4 @@ Efficiency (LOR): ${calc.value.efficiency}%`;
   background: var(--line, #383842);
 }
 
-.icon-button {
-  background: transparent;
-  border: none;
-  color: var(--muted, #a1a1aa);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 3px;
-  display: inline-flex;
-}
-
-.icon-button:hover {
-  color: var(--text, #edebe8);
-  background: var(--hover, #33333d);
-}
 </style>
