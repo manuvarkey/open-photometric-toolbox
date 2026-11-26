@@ -11,6 +11,7 @@ const props = defineProps<{
   data: PhotometricData;
   reportType: "indoor" | "roadway" | "floodlight";
   fontFamily: string;
+  fontScale: number;
   zoom: number | "fit";
   fontMessage: string;
 }>();
@@ -53,7 +54,7 @@ async function downloadHtmlReport() {
     .replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 
   const style = getComputedStyle(element);
-  const typography = ["--report-size-body", "--report-size-caption", "--report-size-title"]
+  const typography = ["--report-size-body", "--report-size-caption", "--report-size-title", "--report-font-scale"]
     .map(token => token + ": " + style.getPropertyValue(token).trim() + ";").join(" ");
   const htmlContent = `<!DOCTYPE html>
 <html>
@@ -62,35 +63,35 @@ async function downloadHtmlReport() {
   <title>${title}</title>
   <style>
     :root { ${typography} }
-    body { font-family: ${fontStyle.value}; margin: 30px; color: #18181b; background: #fff; line-height: 1.4; font-size: var(--report-size-body); }
-    h1 { font-size: var(--report-size-title); margin: 0 0 4px; color: #0f172a; }
-    h2 { font-size: var(--report-size-body); margin: 12px 0 6px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: var(--report-size-body); }
+    body { font-family: ${fontStyle.value}; margin: 30px; color: #18181b; background: #fff; line-height: 1.4; font-size: calc(var(--report-size-body) * var(--report-font-scale, 1)); }
+    h1 { font-size: calc(var(--report-size-title) * var(--report-font-scale, 1)); margin: 0 0 4px; color: #0f172a; }
+    h2 { font-size: calc(var(--report-size-body) * var(--report-font-scale, 1)); margin: 12px 0 6px; color: #334155; border-bottom: 1px solid #cbd5e1; padding-bottom: 2px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: calc(var(--report-size-body) * var(--report-font-scale, 1)); }
     th, td { border: 1px solid #cbd5e1; padding: 4px 6px; text-align: left; }
     th { background: #f1f5f9; color: #475569; }
     .text-right { text-align: right; }
     .header-box { border: 1px solid #94a3b8; padding: 12px; margin-bottom: 16px; border-radius: 4px; background: #f8fafc; }
     .header-title-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .report-type-badge { background: #d97706; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: var(--report-size-caption); text-transform: uppercase; }
-    .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: var(--report-size-body); }
+    .report-type-badge { background: #d97706; color: white; padding: 3px 8px; border-radius: 3px; font-weight: bold; font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1)); text-transform: uppercase; }
+    .meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; font-size: calc(var(--report-size-body) * var(--report-font-scale, 1)); }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .badge { display: inline-block; padding: 2px 6px; background: #e2e8f0; border-radius: 3px; font-weight: bold; }
     .doc-section { margin-bottom: 16px; }
-    .section-title { font-weight: bold; font-size: var(--report-size-body); color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
+    .section-title { font-weight: bold; font-size: calc(var(--report-size-body) * var(--report-font-scale, 1)); color: #334155; margin-bottom: 6px; border-bottom: 1.5px solid #cbd5e1; padding-bottom: 2px; }
     .polar-svg { width: 100%; max-width: 260px; height: auto; display: block; margin: 0 auto; }
     .doc-header { border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 14px; }
     .doc-title-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
     .doc-title-row > :first-child { min-width: 0; flex: 1; overflow-wrap: anywhere; }
     .doc-badge-col { flex: none; }
     .doc-subtitle, .polar-caption { color: #64748b; }
-    .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: var(--report-size-caption); }
+    .report-stamp { white-space: nowrap; background: #0f172a; color: #fff; padding: 3px 8px; font-weight: bold; font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1)); }
     .luminaire-meta-box { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 14px; background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; }
     .meta-col { min-width: 0; overflow-wrap: anywhere; display: flex; flex-direction: column; gap: 2px; }
     .polar-summary-section { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 14px; }
     .polar-box { display: flex; flex-direction: column; align-items: center; }
     .report-polar-svg { width: 180px; height: 180px; }
-    .cu-report-table th, .cu-report-table td { font-size: var(--report-size-caption); padding: 2px 3px; text-align: center; }
-    .doc-footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: var(--report-size-caption); color: #94a3b8; text-align: center; }
+    .cu-report-table th, .cu-report-table td { font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1)); padding: 2px 3px; text-align: center; }
+    .doc-footer { margin-top: 24px; border-top: 1px solid #cbd5e1; padding-top: 8px; font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1)); color: #94a3b8; text-align: center; }
   </style>
 </head>
 <body>
@@ -142,7 +143,11 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   <div class="reports-root">
     <p v-if="fontMessage" class="font-status no-print" role="status">{{ fontMessage }}</p>
     <div ref="paperContainer" class="paper-container">
-      <div ref="paper" id="printable-report-content" class="report-paper" :style="{ fontFamily: fontStyle, '--report-preview-zoom': previewZoom }">
+      <div ref="paper" id="printable-report-content" class="report-paper" :style="{
+        fontFamily: fontStyle,
+        '--report-preview-zoom': previewZoom,
+        '--report-font-scale': fontScale,
+      }">
         <!-- Report Header -->
         <header class="doc-header">
           <div class="doc-title-row">
@@ -428,7 +433,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   min-height: 1050px;
   padding: 32px 36px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  font-size: var(--report-size-body);
+  font-size: calc(var(--report-size-body) * var(--report-font-scale, 1));
   line-height: 1.4;
   display: flex;
   flex-direction: column;
@@ -452,21 +457,21 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 .doc-badge-col { flex: none; }
 
 .doc-main-title {
-  font-size: var(--report-size-title);
+  font-size: calc(var(--report-size-title) * var(--report-font-scale, 1));
   font-weight: 700;
   color: #0f172a;
   margin: 0;
 }
 
 .doc-subtitle {
-  font-size: var(--report-size-body);
+  font-size: calc(var(--report-size-body) * var(--report-font-scale, 1));
   color: #64748b;
   margin-top: 2px;
 }
 
 .report-stamp {
   white-space: nowrap;
-  font-size: var(--report-size-caption);
+  font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1));
   font-weight: 700;
   letter-spacing: 0.05em;
   background: #0f172a;
@@ -483,7 +488,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   border: 1px solid #e2e8f0;
   padding: 8px 12px;
   border-radius: 4px;
-  font-size: var(--report-size-body);
+  font-size: calc(var(--report-size-body) * var(--report-font-scale, 1));
 }
 
 .meta-col {
@@ -519,14 +524,14 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 }
 
 .polar-caption {
-  font-size: var(--report-size-caption);
+  font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1));
   color: #64748b;
   margin-top: 4px;
   text-align: center;
 }
 
 .section-title {
-  font-size: var(--report-size-body);
+  font-size: calc(var(--report-size-body) * var(--report-font-scale, 1));
   font-weight: 700;
   color: #0f172a;
   border-bottom: 1px solid #cbd5e1;
@@ -539,7 +544,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 .report-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--report-size-body);
+  font-size: calc(var(--report-size-body) * var(--report-font-scale, 1));
 }
 
 .report-table th,
@@ -556,7 +561,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
 
 .cu-report-table th,
 .cu-report-table td {
-  font-size: var(--report-size-caption);
+  font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1));
   padding: 2px 3px;
   text-align: center;
 }
@@ -567,7 +572,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   background: #e2e8f0;
   border-radius: 3px;
   font-weight: 600;
-  font-size: var(--report-size-caption);
+  font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1));
 }
 
 .text-right {
@@ -588,7 +593,7 @@ const polarSvgPath = computed(() => polarPath(props.data, cx, cy, rMax));
   margin-top: auto;
   border-top: 1px solid #cbd5e1;
   padding-top: 8px;
-  font-size: var(--report-size-caption);
+  font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1));
   color: #94a3b8;
   text-align: center;
 }

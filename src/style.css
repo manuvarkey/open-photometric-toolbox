@@ -536,7 +536,7 @@ input, button, select, textarea, [role="combobox"], [tabindex]:focus-visible { f
   .report-table {
     border-collapse: collapse !important;
     width: 100% !important;
-    font-size: var(--report-size-caption) !important;
+    font-size: calc(var(--report-size-caption) * var(--report-font-scale, 1)) !important;
   }
 
   .report-table th,

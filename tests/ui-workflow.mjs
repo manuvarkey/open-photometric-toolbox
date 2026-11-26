@@ -40,6 +40,8 @@ try{
   matrix.push(id);await p.close();console.log('Layout',id);
  }
  const p=await browser.newPage({viewport:{width:900,height:600}});p.on('pageerror',error=>errors.push(error.message));await p.goto('http://127.0.0.1:1420');await p.locator('.three-canvas canvas').waitFor();
+ await p.getByText('Display',{exact:true}).click();await choose(p,'UI Scale','90%');await p.getByText('Scale: 90%',{exact:true}).waitFor();
+ await p.getByText('Display',{exact:true}).click();await choose(p,'UI Scale','100%');await p.keyboard.press('Escape');
  await p.locator('.app-container > input[type=file]').first().setInputFiles('tests/fixtures/ldt/symmetry-0.ldt');
  await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('symmetry-0.ldt'));
  await choose(p,'View','2D Candela Plot');await choose(p,'Plot','Cartesian');await choose(p,'Plane','0° Transverse');
@@ -68,8 +70,10 @@ try{
  await p.waitForFunction(fitZoom=>Number(getComputedStyle(document.querySelector('.report-paper')).zoom)<fitZoom,fitZoom);
  await p.getByRole('separator',{name:'Resize Luminaire Inspector'}).press('Home');
  await choose(p,'Report Zoom','150%');assert.equal(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).zoom),'1.5');
- await p.emulateMedia({media:'print'});assert.equal(await p.locator('.report-paper').evaluate(el=>getComputedStyle(el).zoom),'1');await p.emulateMedia({media:'screen'});
- for(const type of ['Indoor','Roadway','Floodlight']){await p.getByRole('group',{name:'Report Type',exact:true}).getByRole('button',{name:type,exact:true}).click();download=p.waitForEvent('download');await p.getByRole('button',{name:'Export HTML Report',exact:true}).click();text=await fs.readFile(await(await download).path(),'utf8');assert.match(text,/DejaVu Serif/);assert.match(text,/<svg/);assert.doesNotMatch(text,/<script|<link[^>]+href=|report-preview-zoom/i);await p.pdf({path:output+'/'+type.toLowerCase()+'.pdf',format:'A4',printBackground:true});}
+ await choose(p,'Report Font Scale','120%');
+ const paper=p.locator('.report-paper');assert.equal(await paper.evaluate(el=>getComputedStyle(el).fontSize),'13.2px');assert.equal(await paper.evaluate(el=>getComputedStyle(el).zoom),'1.5');
+ await p.emulateMedia({media:'print'});assert.equal(await paper.evaluate(el=>getComputedStyle(el).zoom),'1');assert.equal(await paper.evaluate(el=>getComputedStyle(el).fontSize),'13.2px');await p.emulateMedia({media:'screen'});
+ for(const type of ['Indoor','Roadway','Floodlight']){await p.getByRole('group',{name:'Report Type',exact:true}).getByRole('button',{name:type,exact:true}).click();download=p.waitForEvent('download');await p.getByRole('button',{name:'Export HTML Report',exact:true}).click();text=await fs.readFile(await(await download).path(),'utf8');assert.match(text,/DejaVu Serif/);assert.match(text,/--report-font-scale: 1\.2;/);assert.match(text,/<svg/);assert.doesNotMatch(text,/<script|<link[^>]+href=|report-preview-zoom/i);await p.pdf({path:output+'/'+type.toLowerCase()+'.pdf',format:'A4',printBackground:true});}
  // Manufacturer identifiers may contain long strings without spaces.
  const longMetadata=(await fs.readFile('tests/fixtures/ldt/symmetry-3.ldt','utf8')).replace('Test LED','Luminaire_Manufacturer_Model_'.repeat(8));
  await p.locator('input[type=file]').first().setInputFiles({name:'long-metadata.ldt',mimeType:'text/plain',buffer:Buffer.from(longMetadata)});await p.waitForFunction(()=>document.querySelector('.file-name')?.textContent.includes('long-metadata.ldt'));
@@ -80,7 +84,7 @@ try{
  await splitter.press('Home');assert.equal(await splitter.getAttribute('aria-valuenow'),await splitter.getAttribute('aria-valuemin'));
  await p.getByText('Identity & Source',{exact:true}).click();const longValue=p.locator('.side-inspector .data-kv .v').filter({hasText:'Luminaire_Manufacturer_Model_'});assert.ok(await longValue.evaluate(el=>el.scrollWidth<=el.clientWidth));
  const uiFont=await p.locator('.ribbon-tabs > button').first().evaluate(el=>getComputedStyle(el).fontFamily);assert.equal(uiFont,await p.locator('html').evaluate(el=>getComputedStyle(el).fontFamily));checks.push('Report font reaches all three HTML/PDF outputs without changing UI fonts');
- await p.getByRole('tab',{name:'Visualize',exact:true}).click();await p.getByRole('tab',{name:'Reports',exact:true}).click();assert.match(await p.getByRole('combobox',{name:'Report Font',exact:true}).innerText(),/DejaVu Serif/);assert.match(await p.getByRole('combobox',{name:'Report Zoom',exact:true}).innerText(),/150%/);checks.push('Report settings persist across view changes');
+ await p.getByRole('tab',{name:'Visualize',exact:true}).click();await p.getByRole('tab',{name:'Reports',exact:true}).click();assert.match(await p.getByRole('combobox',{name:'Report Font',exact:true}).innerText(),/DejaVu Serif/);assert.match(await p.getByRole('combobox',{name:'Report Zoom',exact:true}).innerText(),/150%/);assert.match(await p.getByRole('combobox',{name:'Report Font Scale',exact:true}).innerText(),/120%/);checks.push('Report settings persist across view changes');
  // Exercise preset generation through its real UI, including signed Type B output.
  await p.getByRole('tab',{name:'File',exact:true}).click();
  for(const preset of ['LED Downlight','Office Batwing','UFO High Bay','NEMA Floodlight','Direct / Indirect','Asymmetric Wall Wash']){

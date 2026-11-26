@@ -73,6 +73,8 @@ const reportZoomOptions = [
   { label: "Fit width", value: "fit" },
   ...[50, 75, 100, 125, 150, 200].map(value => ({ label: `${value}%`, value })),
 ];
+const reportFontScale = ref(100);
+const reportFontScaleOptions = [80, 90, 100, 110, 120, 130].map(value => ({ label: `${value}%`, value }));
 async function loadReportFonts() {
   reportFontsLoading.value = true;
   try {
@@ -564,7 +566,7 @@ onBeforeUnmount(() => {
       <details class="display-menu"><summary><AppIcon name="settings" :size="14" /> Display</summary><div class="menu-content">
         <label><input v-model="showInspector" type="checkbox"> Show Inspector</label>
         <button @click="toggleTheme">Theme: {{ theme === 'dark' ? 'Dark' : 'Light' }}</button>
-        <label>UI Scale <ThemedSelect label="UI Scale" :model-value="uiScale" :options="[1,1.1,1.2,1.3,1.5].map(value => ({value, label: `${Math.round(value*100)}%`}))" @update:model-value="setScale" /></label>
+        <label>UI Scale <ThemedSelect label="UI Scale" :model-value="uiScale" :options="[0.9,1,1.1,1.2,1.3,1.5].map(value => ({value, label: `${Math.round(value*100)}%`}))" @update:model-value="setScale" /></label>
         <label><input v-model="showStatusBar" type="checkbox"> Status Bar</label>
       </div></details>
     </nav>
@@ -626,6 +628,7 @@ onBeforeUnmount(() => {
         <div class="ribbon-group">
           <div class="ribbon-fields report-fields">
             <label class="report-font-field">Report Font <ThemedSelect label="Report Font" v-model="reportFont" :options="reportFontOptions" :title="reportFont === 'system-ui' ? 'System default' : reportFont" filter /></label>
+            <label>Font Scale <ThemedSelect label="Report Font Scale" v-model="reportFontScale" :options="reportFontScaleOptions" /></label>
             <label>Report Zoom <ThemedSelect label="Report Zoom" v-model="reportZoom" :options="reportZoomOptions" /></label>
           </div>
           <small>Preview</small>
@@ -810,6 +813,7 @@ onBeforeUnmount(() => {
             ref="reportViewer"
             :data="currentData"
             :font-family="reportFont"
+            :font-scale="reportFontScale / 100"
             :report-type="reportType"
             :zoom="reportZoom"
             :font-message="reportFontMessage"
